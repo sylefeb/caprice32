@@ -21,8 +21,12 @@
 #include <sstream>
 #include <chrono>
 #include <string>
+#include <memory>
 //#include <thread>
-#include <filesystem>
+//#include <filesystem>
+extern "C" {
+#include "../libs/fat_io_lib/src/fat_filelib.h"
+}
 
 // #include "SDL.h"
 #include "SDL_stub.h"
@@ -124,8 +128,8 @@ dword breakPointsToSkipBeforeProceedingWithVirtualEvents = 0;
 
 t_MemBankConfig membank_config;
 
-FILE *pfileObject;
-FILE *pfoPrinter;
+FL_FILE *pfileObject;
+FL_FILE *pfoPrinter;
 
 #ifdef DEBUG
 dword dwDebugFlag = 0;
@@ -207,7 +211,7 @@ byte bit_values[8] = {
 #include "rom_mods.h"
 
 char chAppPath[_MAX_PATH + 1];
-std::filesystem::path binPath; // Where the binary is
+std::string binPath; // Where the binary is
 char chROMSelected[_MAX_PATH + 1];
 std::string chROMFile[4] = {
    "cpc464.rom",
@@ -748,8 +752,8 @@ void z80_OUT_handler (reg_pair port, byte val)
       CPC.printer_port = val ^ 0x80; // invert bit 7
       if (pfoPrinter) {
          if (!(CPC.printer_port & 0x80)) { // only grab data bytes; ignore the strobe signal
-            fputc(CPC.printer_port, pfoPrinter); // capture printer output to file
-            fflush(pfoPrinter);
+            fl_fputc(CPC.printer_port, pfoPrinter); // capture printer output to file
+            fl_fflush(pfoPrinter);
          }
       }
    }
@@ -990,14 +994,14 @@ int emulator_patch_ROM ()
    if(CPC.model <= 2) { // Normal CPC range
       std::string romFilename = CPC.rom_path + "/" + chROMFile[CPC.model];
   printf("emulator_patch_ROM [1]\n");
-      if ((pfileObject = fopen(romFilename.c_str(), "rb")) != nullptr) { // load CPC OS + Basic
-         if(fread(pbROM, 2*16384, 1, pfileObject) != 1) {
-            fclose(pfileObject);
+      if ((pfileObject = (FL_FILE*)fl_fopen(romFilename.c_str(), "rb")) != nullptr) { // load CPC OS + Basic
+         if(fl_fread(pbROM, 2*16384, 1, pfileObject) != 1) {
+            fl_fclose(pfileObject);
             LOG_ERROR("Couldn't read ROM file '" << romFilename << "'");
             return ERR_NOT_A_CPC_ROM;
          }
          pbROMlo = pbROM;
-         fclose(pfileObject);
+         fl_fclose(pfileObject);
       } else {
   printf("emulator_patch_ROM [2] NO ROM\n");
          LOG_ERROR("Couldn't open ROM file '" << romFilename << "'");
@@ -1162,9 +1166,9 @@ int emulator_init ()
          memset(pchRomData, 0, 16384); // clear memory
          std::string romFilename = CPC.rom_path + "/" + rom_file;
   printf("emulator_init [6]\n");
-         if ((pfileObject = fopen(romFilename.c_str(), "rb")) != nullptr) { // attempt to open the ROM image
-            if(fread(pchRomData, 128, 1, pfileObject) != 1) { // read 128 bytes of ROM data
-              fclose(pfileObject);
+         if ((pfileObject = (FL_FILE*)fl_fopen(romFilename.c_str(), "rb")) != nullptr) { // attempt to open the ROM image
+            if(fl_fread(pchRomData, 128, 1, pfileObject) != 1) { // read 128 bytes of ROM data
+              fl_fclose(pfileObject);
               return ERR_NOT_A_CPC_ROM;
             }
             word checksum = 0;
@@ -1188,14 +1192,14 @@ int emulator_init ()
 
 
             if (checksum == ((pchRomData[0x43] << 8) + pchRomData[0x44])) { // if the checksum matches, we got us an AMSDOS header
-               if(fread(pchRomData, 128, 1, pfileObject) != 1) { // skip it
-                 fclose(pfileObject);
+               if(fl_fread(pchRomData, 128, 1, pfileObject) != 1) { // skip it
+                 fl_fclose(pfileObject);
                  return ERR_NOT_A_CPC_ROM;
                }
             }
             if (!(pchRomData[0] & 0xfc)) { // is it a valid CPC ROM image (0 = forground, 1 = background, 2 = extension)?
-               if(fread(pchRomData+128, 16384-128, 1, pfileObject) != 1) { // read the rest of the ROM file
-                 fclose(pfileObject);
+               if(fl_fread(pchRomData+128, 16384-128, 1, pfileObject) != 1) { // read the rest of the ROM file
+                 fl_fclose(pfileObject);
                  return ERR_NOT_A_CPC_ROM;
                }
                memmap_ROM[iRomNum] = pchRomData; // update the ROM map
@@ -1203,8 +1207,8 @@ int emulator_init ()
             // Graduate Software Accessory Roms use a non standard format. Only the first byte is validated, and as long as
             // it's a "G" and terminated with a "$" it'll try to use it.
             // See https://www.cpcwiki.eu/index.php/Graduate_Software#Structure_of_a_utility_ROM for more details.
-              if(fread(pchRomData+128, 16384-128, 1, pfileObject) != 1) { // read the rest of the ROM file
-                fclose(pfileObject);
+              if(fl_fread(pchRomData+128, 16384-128, 1, pfileObject) != 1) { // read the rest of the ROM file
+                fl_fclose(pfileObject);
                 return ERR_NOT_A_CPC_ROM;
               }
               memmap_ROM[iRomNum] = pchRomData; // update the ROM map
@@ -1213,7 +1217,7 @@ int emulator_init ()
                delete [] pchRomData; // free memory on error
                CPC.rom_file[iRomNum] = "";
             }
-            fclose(pfileObject);
+            fl_fclose(pfileObject);
          } else { // file not found
             fprintf(stderr, "ERROR: The %s file is missing - clearing ROM slot %d.\n", rom_file.c_str(), iRomNum);
             delete [] pchRomData; // free memory on error
@@ -1229,12 +1233,12 @@ int emulator_init ()
          memset(pbMF2ROM, 0, 16384); // clear memory
          std::string romFilename = CPC.rom_path + "/" + CPC.rom_mf2;
          bool MF2error = false;
-         if ((pfileObject = fopen(romFilename.c_str(), "rb")) != nullptr) { // attempt to open the ROM image
-            if((fread(pbMF2ROMbackup, 8192, 1, pfileObject) != 1) || (memcmp(pbMF2ROMbackup+0x0d32, "MULTIFACE 2", 11) != 0)) { // does it have the required signature?
+         if ((pfileObject = (FL_FILE*)fl_fopen(romFilename.c_str(), "rb")) != nullptr) { // attempt to open the ROM image
+            if((fl_fread(pbMF2ROMbackup, 8192, 1, pfileObject) != 1) || (memcmp(pbMF2ROMbackup+0x0d32, "MULTIFACE 2", 11) != 0)) { // does it have the required signature?
                fprintf(stderr, "ERROR: The file selected as the MF2 ROM is either corrupt or invalid.\n");
                MF2error = true;
             }
-            fclose(pfileObject);
+            fl_fclose(pfileObject);
          } else { // error opening file
             fprintf(stderr, "ERROR: The file selected as the MF2 ROM (%s) couldn't be opened.\n", romFilename.c_str());
             MF2error = true;
@@ -1282,26 +1286,28 @@ void emulator_shutdown ()
 void bin_load (const std::string& filename, const size_t offset)
 {
   LOG_INFO("Load " << filename << " in memory at offset 0x" << std::hex << offset);
-  FILE *file;
-  if ((file = fopen(filename.c_str(), "rb")) == nullptr) {
+  FL_FILE *file;
+  if ((file = (FL_FILE*)fl_fopen(filename.c_str(), "rb")) == nullptr) {
     LOG_ERROR("File not found: " << filename);
     return;
   }
 
-  auto closure = [&]() { fclose(file); };
+  auto closure = [&]() { fl_fclose(file); };
   memutils::scope_exit<decltype(closure)> cs(closure); // TODO: when C++20, can become a one liner expression.
 
   size_t ram_size = 0XFFFF; // TODO: Find a way to have the real RAM size
   size_t max_size = ram_size - offset;
-  size_t read = fread(&pbRAM[offset], 1, max_size, file);
-  if (!feof(file)) {
+  size_t read = fl_fread(&pbRAM[offset], 1, max_size, file);
+  if (!fl_feof(file)) {
     LOG_ERROR("Bin file too big to fit in memory");
     return;
   }
+#if 0
   if (ferror(file)) {
     LOG_ERROR("Error reading the bin file: " << ferror(file));
     return;
   }
+#endif
   if (read == 0) {
     LOG_ERROR("Empty bin file");
     return;
@@ -1323,7 +1329,7 @@ void bin_load (const std::string& filename, const size_t offset)
 int printer_start ()
 {
    if (!pfoPrinter) {
-      if(!(pfoPrinter = fopen(CPC.printer_file.c_str(), "wb"))) {
+      if(!(pfoPrinter = (FL_FILE*)fl_fopen(CPC.printer_file.c_str(), "wb"))) {
          return 0; // failed to open/create file
       }
    }
@@ -1335,7 +1341,7 @@ int printer_start ()
 void printer_stop ()
 {
    if (pfoPrinter) {
-      fclose(pfoPrinter);
+      fl_fclose(pfoPrinter);
    }
    pfoPrinter = nullptr;
 }
@@ -1765,7 +1771,7 @@ std::string getConfigurationFilename(bool forWrite)
     { getenv("HOME"), "/.config/cap32.cfg" },
     { getenv("HOME"), "/.cap32.cfg" },
     { DESTDIR, "/etc/cap32.cfg" },
-    { binPath.string().c_str(), "/../Resources/cap32.cfg" }, // To find the configuration from the bundle on MacOS
+    { "/", "/../Resources/cap32.cfg" }, // To find the configuration from the bundle on MacOS
   };
 
   for(const auto& p: configPaths){
@@ -1774,11 +1780,13 @@ std::string getConfigurationFilename(bool forWrite)
     std::string s = std::string(p.first) + p.second;
     if (access(s.c_str(), mode) == 0) {
       std::cout << "Using configuration file" << (forWrite ? " to save" : "") << ": " << s << std::endl;
+#if 0
       // Dirty hack for MacOS Bundle to work: change dir to the bin dir
       // cap32.cfg is edited to have relative paths from the bin dir
       if (p.second == "/../Resources/cap32.cfg") {
               std::filesystem::current_path(binPath);
       }
+#endif
       return s;
     }
   }
