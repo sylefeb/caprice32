@@ -16,6 +16,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#if 0
+
 // Makefile doesn't pass HAVE_GL directly to reduce the likelihood
 // of using HAVE_GL without including this header.
 // We need the header included for every use of HAVE_GL (at least) to be able to
@@ -63,3 +65,5 @@ extern int init_glfuncs();
 #endif // GLFUNCS_H
 
 #endif // HAVE_GL
+
+#endif

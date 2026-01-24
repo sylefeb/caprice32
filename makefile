@@ -56,8 +56,8 @@ endif
 
 CAPS_INCLUDES=-Isrc/capsimg/LibIPF -Isrc/capsimg/Device -Isrc/capsimg/CAPSImg -Isrc/capsimg/Codec -Isrc/capsimg/Core
 
-IPATHS = -Isrc/ $(CAPS_INCLUDES) `sdl2-config --cflags` # -Isrc/gui/includes `pkg-config --cflags freetype2` #`pkg-config --cflags libpng` # `pkg-config --cflags zlib`
-LIBS = `sdl2-config --libs` # `pkg-config --libs freetype2` #`pkg-config --libs libpng` # `pkg-config --libs zlib`
+IPATHS = -Isrc/ $(CAPS_INCLUDES) # `sdl2-config --cflags` # -Isrc/gui/includes `pkg-config --cflags freetype2` #`pkg-config --cflags libpng` # `pkg-config --cflags zlib`
+LIBS = # `sdl2-config --libs` # `pkg-config --libs freetype2` #`pkg-config --libs libpng` # `pkg-config --libs zlib`
 CXX ?= g++
 COMMON_CFLAGS += -fPIC
 
