@@ -21,7 +21,7 @@ LAST_BUILD_IN_DEBUG = $(shell [ -e .debug ] && echo 1 || echo 0)
 
 ARCH ?= linux
 
-COMMON_CFLAGS ?= 
+COMMON_CFLAGS ?=
 
 ifeq ($(ARCH),win64)
 # Rename main to SDL_main to solve the "undefined reference to `SDL_main'".
@@ -56,8 +56,8 @@ endif
 
 CAPS_INCLUDES=-Isrc/capsimg/LibIPF -Isrc/capsimg/Device -Isrc/capsimg/CAPSImg -Isrc/capsimg/Codec -Isrc/capsimg/Core
 
-IPATHS = -Isrc/ $(CAPS_INCLUDES) -Isrc/gui/includes `pkg-config --cflags freetype2` `sdl2-config --cflags` `pkg-config --cflags libpng` `pkg-config --cflags zlib`
-LIBS = `sdl2-config --libs` `pkg-config --libs freetype2` `pkg-config --libs libpng` `pkg-config --libs zlib`
+IPATHS = -Isrc/ $(CAPS_INCLUDES) `sdl2-config --cflags` # -Isrc/gui/includes `pkg-config --cflags freetype2` #`pkg-config --cflags libpng` # `pkg-config --cflags zlib`
+LIBS = `sdl2-config --libs` # `pkg-config --libs freetype2` #`pkg-config --libs libpng` # `pkg-config --libs zlib`
 CXX ?= g++
 COMMON_CFLAGS += -fPIC
 
@@ -96,7 +96,7 @@ GROFF_DOC:=doc/man6/cap32.6
 
 MAIN:=$(OBJDIR)/main.o
 
-SOURCES:=$(shell find $(SRCDIR) -name \*.cpp)
+SOURCES:=$(shell find $(SRCDIR) -path "$(SRCDIR)/gui" -prune -o -name "*.cpp" -print)
 HEADERS:=$(shell find $(SRCDIR) -name \*.h)
 DEPENDS:=$(foreach file,$(SOURCES:.cpp=.d),$(shell echo "$(OBJDIR)/$(file)"))
 OBJECTS:=$(DEPENDS:.d=.o)
@@ -191,7 +191,7 @@ $(TARGET): $(OBJECTS) $(MAIN) cap32.cfg
 
 ifeq ($(PLATFORM),windows)
 DLLS = SDL2.dll libbz2-1.dll libfreetype-6.dll libpng16-16.dll libstdc++-6.dll \
-       libwinpthread-1.dll zlib1.dll libglib-2.0-0.dll libgraphite2.dll \
+       zlib1.dll libglib-2.0-0.dll libgraphite2.dll \
        libharfbuzz-0.dll libiconv-2.dll libintl-8.dll libpcre2-8-0.dll \
 			 libbrotlidec.dll libbrotlicommon.dll
 
@@ -278,7 +278,7 @@ $(OBJDIR)/$(GMOCK_DIR)/src/gmock-all.o: $(GMOCK_DIR)/src/gmock-all.cc googletest
 	$(CXX) -c $(BUILD_FLAGS) $(TEST_CFLAGS) -o $@ $<
 
 $(TEST_TARGET): $(OBJECTS) $(TEST_OBJECTS) $(OBJDIR)/$(GTEST_DIR)/src/gtest-all.o $(OBJDIR)/$(GMOCK_DIR)/src/gmock-all.o
-	$(CXX) $(LDFLAGS) -o $(TEST_TARGET) $(OBJDIR)/$(GTEST_DIR)/src/gtest-all.o $(OBJDIR)/$(GMOCK_DIR)/src/gmock-all.o $(TEST_OBJECTS) $(OBJECTS) $(LIBS) -lpthread
+	$(CXX) $(LDFLAGS) -o $(TEST_TARGET) $(OBJDIR)/$(GTEST_DIR)/src/gtest-all.o $(OBJDIR)/$(GMOCK_DIR)/src/gmock-all.o $(TEST_OBJECTS) $(OBJECTS) $(LIBS)
 
 ifeq ($(PLATFORM),windows)
 unit_test: $(TEST_TARGET) distrib

@@ -21,7 +21,7 @@
 #include <sstream>
 #include <chrono>
 #include <string>
-#include <thread>
+//#include <thread>
 #include <filesystem>
 
 #include "SDL.h"
@@ -47,11 +47,11 @@
 #include <errno.h>
 #include <cstring>
 
-#include "wg_error.h"
-#include "CapriceGui.h"
-#include "CapriceGuiView.h"
-#include "CapriceVKeyboardView.h"
-#include "CapriceLeavingWithoutSavingView.h"
+//#include "wg_error.h"
+//#include "CapriceGui.h"
+//#include "CapriceGuiView.h"
+//#include "CapriceVKeyboardView.h"
+//#include "CapriceLeavingWithoutSavingView.h"
 
 #include "errors.h"
 #include "log.h"
@@ -87,7 +87,7 @@ SDL_AudioDeviceID audio_device_id = 0;
 SDL_Surface *back_surface = nullptr;
 video_plugin* vid_plugin;
 SDL_Joystick* joysticks[MAX_NB_JOYSTICKS];
-std::list<DevTools> devtools;
+// std::list<DevTools> devtools;
 
 dword dwTicks, dwTicksOffset, dwTicksTarget, dwTicksTargetFPS;
 dword dwFPS, dwFrameCount;
@@ -1983,6 +1983,7 @@ bool userConfirmsQuitWithoutSaving()
 {
    auto guiBackSurface = prepareShowUI();
    bool confirmed = false;
+#if 0
    // Show warning
    try {
       CapriceGui capriceGui(mainSDLWindow, /*bInMainView=*/true);
@@ -1995,11 +1996,13 @@ bool userConfirmsQuitWithoutSaving()
       std::cout << "Failed displaying the leaving without saving dialog: " << e.what() << std::endl;
    }
    cleanupShowUI(guiBackSurface);
+#endif
    return confirmed;
 }
 
 void showVKeyboard()
 {
+#if 0
    auto guiBackSurface = prepareShowUI();
    // Activate virtual keyboard
    try {
@@ -2015,10 +2018,12 @@ void showVKeyboard()
       std::cout << "Failed displaying the virtual keyboard: " << e.what() << std::endl;
    }
    cleanupShowUI(guiBackSurface);
+#endif
 }
 
 void showGui()
 {
+#if 0
    auto guiBackSurface = prepareShowUI();
    try {
       CapriceGui capriceGui(mainSDLWindow, /*bInMainView=*/true);
@@ -2049,12 +2054,14 @@ void showGui()
       std::cout << "Failed displaying the GUI: " << e.what() << std::endl;
    }
    cleanupShowUI(guiBackSurface);
+#endif
 }
 
 // TODO: Dedupe with the version in CapriceDevTools
 // TODO: Support watchpoints too
 void loadBreakpoints()
 {
+#if 0
   if (args.symFilePath.empty()) return;
   Symfile symfile(args.symFilePath);
   for (auto breakpoint : symfile.Breakpoints()) {
@@ -2062,10 +2069,12 @@ void loadBreakpoints()
           [&](const auto& bp) { return bp.address == breakpoint; } ) != breakpoints.end()) continue;
     breakpoints.emplace_back(breakpoint);
   }
+#endif
 }
 
 bool showDevTools()
 {
+#if 0
   Uint32 flags = SDL_GetWindowFlags(mainSDLWindow);
   // DevTools don't behave very well in fullscreen mode, so just disallow it
   // It's still possible to use it in fullscreen with multiscreen by starting it
@@ -2081,10 +2090,12 @@ bool showDevTools()
     LOG_ERROR("Failed to activate developers tools");
   }
   if (!args.symFilePath.empty()) devtools.back().LoadSymbols(args.symFilePath);
+#endif
   return true;
 }
 
 void dumpScreen() {
+  #if 0
    std::string dir = CPC.sdump_dir;
    if (!is_directory(dir)) {
           LOG_ERROR("Unable to find or open directory " + CPC.sdump_dir + " when trying to take a screenshot. Defaulting to current directory.")
@@ -2099,6 +2110,7 @@ void dumpScreen() {
    else {
      set_osd_message("Captured " + dumpFile);
    }
+  #endif
 }
 
 // Very similar to screenshot, but difficult to factorize :-)
@@ -2164,9 +2176,11 @@ void cleanExit(int returnCode, bool askIfUnsaved)
    if (askIfUnsaved && driveAltered() && !userConfirmsQuitWithoutSaving()) {
      return;
    }
+#if 0
    for (auto& devtool : devtools) {
      devtool.Deactivate();
    }
+#endif
    doCleanUp();
    exit(returnCode);
 }
@@ -2797,7 +2811,7 @@ int cap32_main (int argc, char **argv)
 
          virtualKeyboardEvents.pop_front();
       }
-
+#if 0
       if (!devtools.empty()) {
         devtools.remove_if([](DevTools& d) { return !d.IsActive(); });
         // Ensure execution is resumed when all devtools are closed
@@ -2805,8 +2819,10 @@ int cap32_main (int argc, char **argv)
         for (auto& devtool : devtools) devtool.PreUpdate();
         for (auto& devtool : devtools) devtool.PostUpdate();
       }
+#endif
       while (SDL_PollEvent(&event)) {
          bool processed = false;
+#if 0
          if (!devtools.empty()) {
            devtools.remove_if([](DevTools& d) { return !d.IsActive(); });
            // Ensure execution is resumed when all devtools are closed
@@ -2818,6 +2834,7 @@ int cap32_main (int argc, char **argv)
              }
            }
          }
+#endif
          if (processed) continue;
          switch (event.type) {
             case SDL_KEYDOWN:
@@ -3116,7 +3133,7 @@ int cap32_main (int argc, char **argv)
                dwTicks = SDL_GetTicks();
                if (dwTicks < dwTicksTarget) { // limit speed ?
                   if (dwTicksTarget - dwTicks > POLL_INTERVAL_MS) { // No need to burn cycles if next event is far away
-                     std::this_thread::sleep_for(std::chrono::milliseconds(POLL_INTERVAL_MS));
+                     //std::this_thread::sleep_for(std::chrono::milliseconds(POLL_INTERVAL_MS));
                   }
                   continue; // delay emulation
                }
@@ -3136,10 +3153,12 @@ int cap32_main (int argc, char **argv)
 
          if (iExitCondition == EC_BREAKPOINT) {
             if (z80.breakpoint_reached || z80.watchpoint_reached) {
+#if 0
               // This is a breakpoint from DevTools or symbol file
               if (devtools.empty()) {
                 if (showDevTools()) CPC.paused = true;
               }
+#endif
             } else {
               // This is an old flavour breakpoint
               // We have to clear breakpoint to let the z80 emulator move on.
@@ -3177,7 +3196,7 @@ int cap32_main (int argc, char **argv)
          }
       }
       else { // We are paused. No need to burn CPU cycles
-         std::this_thread::sleep_for(std::chrono::milliseconds(POLL_INTERVAL_MS));
+        //std::this_thread::sleep_for(std::chrono::milliseconds(POLL_INTERVAL_MS));
       }
    }
 

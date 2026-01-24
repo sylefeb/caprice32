@@ -5,6 +5,8 @@
 #include <vector>
 #include "types.h"
 
+#if 0
+
 namespace zip
 {
   typedef struct {
@@ -17,5 +19,7 @@ namespace zip
   int dir (t_zip_info *zi);
   int extract (const t_zip_info& zi, FILE **pfileOut);
 }
+
+#endif
 
 #endif

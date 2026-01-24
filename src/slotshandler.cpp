@@ -143,6 +143,7 @@ void fillSlots (std::vector<std::string> slot_list, t_CPC& CPC)
          std::string extension = stringutils::lower(fullpath.substr(pos));
 
          if (extension == ".zip") { // are we dealing with a zip archive?
+#if 0
            zip::t_zip_info zip_info;
            zip_info.filename = fullpath;
            zip_info.extensions = ".dsk.sna.cdt.voc.cpr.ipf.raw";
@@ -152,6 +153,7 @@ void fillSlots (std::vector<std::string> slot_list, t_CPC& CPC)
            std::string filename = zip_info.filesOffsets[0].first;
            pos = filename.length() - 4;
            extension = stringutils::lower(filename.substr(pos)); // grab the extension
+#endif
          }
 
          if (fillSlot(CPC.driveA, have_DSKA, fullpath, extension, ".dsk", "drive A disk"))
@@ -192,6 +194,7 @@ void loadSlots() {
 // FILE handle returned must be closed once finished with.
 // nullptr is returned if file couldn't be extracted for any reason.
 FILE *extractFile(const std::string& zipfile, const std::string& filename, const std::string& ext) {
+#if 0
   zip::t_zip_info zip_info;
   zip_info.filename = zipfile;
   zip_info.extensions = ext;
@@ -206,6 +209,7 @@ FILE *extractFile(const std::string& zipfile, const std::string& filename, const
       }
     }
   }
+#endif
   return nullptr;
 }
 
@@ -1440,8 +1444,8 @@ int file_load(t_slot& slot)
   }
   int pos = slot.file.length() - 4;
   std::string extension = stringutils::lower(slot.file.substr(pos));
-
   FILE *file = nullptr;
+#if 0
   if (extension == ".zip") {
     zip::t_zip_info zip_info;
     zip_info.filename = slot.file;
@@ -1463,7 +1467,7 @@ int file_load(t_slot& slot)
       set_osd_message("Loaded '" + filename + "' - Press Shift+F5 for next file", 5000);
     }
   }
-
+#endif
   for(const auto& loader : files_loader_list) {
     if (slot.drive == loader.drive && extension == loader.extension) {
       if (file) {

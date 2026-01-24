@@ -6,6 +6,7 @@
  * Code was copied and slightly adapted from driedfruit savepng.
  * See https://github.com/driedfruit/SDL_SavePNG
  */
+#if 0
 #include <SDL.h>
 #include <png.h>
 #include <cinttypes>
@@ -53,7 +54,7 @@ SDL_Surface *SDL_PNGFormatAlpha(SDL_Surface *src)
 {
   SDL_Surface *surf;
   SDL_Rect rect = { 0, 0, 0, 0 };
-  
+
   /* Convert 32bpp alpha-less image to 24bpp alpha-less image */
   rect.w = src->w;
   rect.h = src->h;
@@ -166,3 +167,4 @@ int SDL_SavePNG(SDL_Surface *src, const std::string& file)
 
   return (SUCCESS);
 }
+#endif

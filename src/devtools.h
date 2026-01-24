@@ -1,6 +1,8 @@
 #ifndef DEVTOOLS_H
 #define DEVTOOLS_H
 
+#if 0
+
 #include <string>
 #include "SDL.h"
 #include "CapriceGui.h"
@@ -32,5 +34,6 @@ class DevTools {
     SDL_Surface* surface = nullptr;
     int scale = 0;
 };
+#endif
 
 #endif

@@ -1,5 +1,7 @@
 #include "zip.h"
 
+#if 0
+
 #include <cstring>
 #include <strings.h>
 #include <zlib.h>
@@ -191,3 +193,5 @@ namespace zip
     return 0; // data was successfully decompressed
   }
 }
+
+#endif

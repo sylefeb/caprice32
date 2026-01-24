@@ -1,5 +1,7 @@
 #include "devtools.h"
 
+#if 0
+
 #include <string>
 #include "log.h"
 #include "video.h"
@@ -60,3 +62,5 @@ void DevTools::PostUpdate() {
 bool DevTools::PassEvent(SDL_Event& event) {
   return capriceGui->ProcessEvent(event);
 }
+
+#endif

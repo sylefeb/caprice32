@@ -30,7 +30,7 @@
 #include <deque>
 #include <map>
 #include "SDL.h"
-#include "SDL_thread.h"
+// #include "SDL_thread.h"
 
 
 namespace wGui
@@ -129,4 +129,3 @@ protected:
 
 
 #endif // _WG_MESSAGE_SERVER_H_
-
