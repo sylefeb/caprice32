@@ -19,7 +19,7 @@
 #ifndef Z80_H
 #define Z80_H
 
-#include "SDL.h"
+// #include "SDL.h"
 #include "types.h"
 #include "crtc.h"
 
@@ -31,13 +31,13 @@
 // outside of the 16 bits range (e.g. deactivating z80.break_point with an
 // unreachable address).
 typedef union {
-#if SDL_BYTEORDER == SDL_LIL_ENDIAN
+//#if SDL_BYTEORDER == SDL_LIL_ENDIAN
    struct { byte l, h, h2, h3; } b;
    struct { word l, h; } w;
-#else
+/*#else
    struct { byte h3, h2, h, l; } b;
    struct { word h, l; } w;
-#endif
+#endif*/
    dword d;
 }  reg_pair;
 

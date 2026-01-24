@@ -1062,7 +1062,6 @@ int z80_execute()
             dwMF2Flags = MF2_INVISIBLE; // clear running flag and make the MF2 'invisible'
          }
       }
-
       z80_execute_instruction();
 
       z80_wait_states

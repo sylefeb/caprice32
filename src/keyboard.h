@@ -2,7 +2,8 @@
 #define _KEYBOARD_H_
 
 #include "types.h"
-#include "SDL.h"
+// #include "SDL.h"
+#include "SDL_stub.h"
 #include <map>
 #include <list>
 #include <string>

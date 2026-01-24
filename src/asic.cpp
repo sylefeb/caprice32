@@ -1,7 +1,8 @@
 #include "asic.h"
 #include "log.h"
 #include "cap32.h"
-#include "SDL.h"
+// #include "SDL.h"
+#include "SDL_stub.h"
 #include "crtc.h"
 
 byte *pbRegisterPage;
@@ -220,7 +221,7 @@ void asic_set_palette() {
     if (blue > 255) {
       blue = 255;
     }
-    GateArray.palette[colour] = SDL_MapRGB(back_surface->format, red, green, blue);
+    GateArray.palette[colour] = red | (green<<8) | (blue<<16); // SDL_MapRGB(back_surface->format, red, green, blue);
     // TODO(cpitrat): Confirm whether we should update the mode 2 'anti-aliasing' colour (cf. src/cap32.cpp where GateArray.palette[33] is set).
   }
 }
@@ -374,7 +375,7 @@ bool asic_register_page_write(word addr, byte val) {
 
 void putpixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
 {
-   int bpp = surface->format->BytesPerPixel;
+   int bpp = 8; // surface->format->BytesPerPixel;
    /* Here p is the address to the pixel we want to set */
    Uint8 *p = static_cast<Uint8 *>(surface->pixels) + y * surface->pitch + x * bpp;
 
@@ -388,11 +389,11 @@ void putpixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
          break;
 
       case 3:
-         if(SDL_BYTEORDER == SDL_BIG_ENDIAN) {
+         /*if(SDL_BYTEORDER == SDL_BIG_ENDIAN) {
             p[0] = (pixel >> 16) & 0xff;
             p[1] = (pixel >> 8) & 0xff;
             p[2] = pixel & 0xff;
-         } else {
+         } else*/ {
             p[0] = pixel & 0xff;
             p[1] = (pixel >> 8) & 0xff;
             p[2] = (pixel >> 16) & 0xff;

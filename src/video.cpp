@@ -17,7 +17,7 @@
 */
 
 /*
-   This file includes video filters from the SMS Plus/SDL 
+   This file includes video filters from the SMS Plus/SDL
    sega master system emulator :
    (c) Copyright Gregory Montoir
    http://membres.lycos.fr/cyxdown/smssdl/
@@ -33,23 +33,25 @@
 #include "video.h"
 #include "cap32.h"
 #include "log.h"
-#include "glfuncs.h"
-#ifdef HAVE_GL
-#include "SDL_opengl.h"
-#endif
+//#include "glfuncs.h"
+//#ifdef HAVE_GL
+//#include "SDL_opengl.h"
+//#endif
 #include <math.h>
 #include <memory>
 #include <iostream>
 
+#if 0
 SDL_Window* mainSDLWindow = nullptr;
 SDL_Renderer* renderer = nullptr;
 SDL_Texture* texture = nullptr;
 SDL_GLContext glcontext;
+#endif
 
 // the video surface ready to display
 SDL_Surface* vid = nullptr;
 // the video surface scaled with same format as pub
-SDL_Surface* scaled = nullptr;
+// SDL_Surface* scaled = nullptr;
 // the video surface shown by the plugin to the application
 SDL_Surface* pub = nullptr;
 
@@ -87,14 +89,18 @@ static bool have_gl_extension (const char *nom_ext)
 // Returns a bpp compatible with the renderer
 int renderer_bpp(SDL_Renderer *sdl_renderer)
 {
+  return 24;
+#if 0
   SDL_RendererInfo infos;
   SDL_GetRendererInfo(sdl_renderer, &infos);
   return SDL_BITSPERPIXEL(infos.texture_formats[0]);
+#endif
 }
 
 // TODO: Cleanup sw_scaling if really not needed
 void compute_scale(video_plugin* t, int w, int h)
 {
+#if 0
   int win_width, win_height;
   SDL_GetWindowSize(mainSDLWindow, &win_width, &win_height);
   if (CPC.scr_preserve_aspect_ratio != 0) {
@@ -118,13 +124,31 @@ void compute_scale(video_plugin* t, int w, int h)
     t->width = win_width;
     t->height = win_height;
   }
+#endif
 }
 
 /* ------------------------------------------------------------------------------------ */
 /* Half size video plugin ------------------------------------------------------------- */
 /* ------------------------------------------------------------------------------------ */
+
+static SDL_Surface *make_surface()
+{
+  SDL_Surface *srf = new SDL_Surface;
+  srf->flags = 0;
+  srf->w = CPC_VISIBLE_SCR_WIDTH;
+  srf->h = CPC_VISIBLE_SCR_HEIGHT;
+  srf->pitch = srf->w*3;
+  srf->pixels = new Uint8[srf->w*srf->h*3];
+  srf->userdata = 0;
+  srf->list_blitmap = nullptr;
+  srf->locked = 0;
+  return srf;
+}
+
 SDL_Surface* direct_init(video_plugin* t, int scale, bool fs)
 {
+  std::cerr << "######################### SCALE = " << scale << '\n';
+#if 0
   SDL_CreateWindowAndRenderer(CPC_VISIBLE_SCR_WIDTH*scale, CPC_VISIBLE_SCR_HEIGHT*scale, (fs?SDL_WINDOW_FULLSCREEN_DESKTOP:SDL_WINDOW_SHOWN), &mainSDLWindow, &renderer);
   if (!mainSDLWindow || !renderer) return nullptr;
   SDL_SetWindowTitle(mainSDLWindow, "Caprice32 " VERSION_STRING);
@@ -145,15 +169,26 @@ SDL_Surface* direct_init(video_plugin* t, int scale, bool fs)
   SDL_FillRect(vid, nullptr, SDL_MapRGB(vid->format,0,0,0));
   compute_scale(t, surface_width, surface_height);
   return vid;
+#else
+  vid = make_surface();
+  pub = vid;
+  return vid;
+#endif
+  return nullptr;
 }
 
 void direct_setpal(SDL_Color* c)
 {
+#if 0
   SDL_SetPaletteColors(vid->format->palette, c, 0, 32);
+#endif
 }
+
+#include "tga.h"
 
 void direct_flip(video_plugin* t)
 {
+#if 0
   SDL_UpdateTexture(texture, nullptr, vid->pixels, vid->pitch);
   SDL_RenderClear(renderer);
   if (CPC.scr_preserve_aspect_ratio != 0) {
@@ -163,14 +198,25 @@ void direct_flip(video_plugin* t)
     SDL_RenderCopy(renderer, texture, nullptr, nullptr);
   }
   SDL_RenderPresent(renderer);
+#else
+  std::cerr << "flip\n";
+  t_image_nfo tga;
+  tga.pixels = (Uint8*)vid->pixels;
+  tga.width = vid->w;
+  tga.height = vid->h;
+  tga.depth = 24;
+  SaveTGAFile("video.tga",&tga);
+#endif
 }
 
 void direct_close()
 {
+#if 0
   if (texture) SDL_DestroyTexture(texture);
   if (vid) SDL_FreeSurface(vid);
   if (renderer) SDL_DestroyRenderer(renderer);
   if (mainSDLWindow) SDL_DestroyWindow(mainSDLWindow);
+#endif
 }
 
 
@@ -375,7 +421,7 @@ void glscale_flip(video_plugin* t __attribute__((unused)))
   eglDisable(GL_BLEND);
   eglClearColor(0,0,0,1);
   eglClear(GL_COLOR_BUFFER_BIT);
-  
+
   if (gl_scanlines!=0)
   {
     eglActiveTextureARB(GL_TEXTURE1_ARB);
@@ -388,7 +434,7 @@ void glscale_flip(video_plugin* t __attribute__((unused)))
 
   eglEnable(GL_TEXTURE_2D);
   eglBindTexture(GL_TEXTURE_2D,screen_texnum);
-  
+
   if (CPC.scr_remanency && !CPC.scr_gui_is_currently_on)
   {
     /* draw again using the old texture */
@@ -438,8 +484,8 @@ void glscale_flip(video_plugin* t __attribute__((unused)))
       break;
     case 8:
       eglTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0,
-          pub->w,pub->h, 
-          GL_COLOR_INDEX, GL_UNSIGNED_BYTE, 
+          pub->w,pub->h,
+          GL_COLOR_INDEX, GL_UNSIGNED_BYTE,
           pub->pixels);
       break;
   }
@@ -496,6 +542,7 @@ void glscale_close()
  */
 static void compute_rects(SDL_Rect* src, SDL_Rect* dst, Uint8 half_pixels)
 {
+#if 0
   int surface_width = CPC_VISIBLE_SCR_WIDTH*4;
   int surface_height = CPC_VISIBLE_SCR_HEIGHT*4;
   if (half_pixels) {
@@ -507,12 +554,12 @@ static void compute_rects(SDL_Rect* src, SDL_Rect* dst, Uint8 half_pixels)
   src->y=0;
   src->w=pub->w;
   src->h=pub->h;
-  
+
   dst->x=(scaled->w-surface_width)/2,
   dst->y=(scaled->h-surface_height)/2;
   dst->w=scaled->w;
   dst->h=scaled->h;
-  
+
   int dw=src->w*2-dst->w;
   /* the src width is too big */
   if (dw>0)
@@ -537,7 +584,7 @@ static void compute_rects(SDL_Rect* src, SDL_Rect* dst, Uint8 half_pixels)
     dh += 1;
     src->h-=dh/2;
     src->y+=dh/4;
-    
+
     dst->y=0;
     dst->h=scaled->h;
   }
@@ -549,15 +596,19 @@ static void compute_rects(SDL_Rect* src, SDL_Rect* dst, Uint8 half_pixels)
     src->h-=2*2;
     dst->h=surface_height;
   }
+#endif
 }
 
 void compute_rects_for_tests(SDL_Rect* src, SDL_Rect* dst, Uint8 half_pixels)
 {
+  #if 0
   compute_rects(src, dst, half_pixels);
+  #endif
 }
 
 SDL_Surface* swscale_init(video_plugin* t, int scale, bool fs)
 {
+#if 0
   SDL_CreateWindowAndRenderer(CPC_VISIBLE_SCR_WIDTH*scale, CPC_VISIBLE_SCR_HEIGHT*scale, (fs?SDL_WINDOW_FULLSCREEN_DESKTOP:SDL_WINDOW_SHOWN), &mainSDLWindow, &renderer);
   if (!mainSDLWindow || !renderer) return nullptr;
   SDL_SetWindowTitle(mainSDLWindow, "Caprice32 " VERSION_STRING);
@@ -591,13 +642,15 @@ SDL_Surface* swscale_init(video_plugin* t, int scale, bool fs)
     LOG_ERROR(t->name << ": SDL didn't return a 16 bpp surface but a " << static_cast<int>(pub->format->BitsPerPixel) << " bpp one.");
     return nullptr;
   }
-
   return pub;
+#endif
+  return nullptr;
 }
 
 // Common code to all software plugin to display the vid surface after it's been computed.
 void swscale_blit(video_plugin* t)
 {
+#if 0
   // Blit to convert from 16bpp to pixel format compatible with renderer.
   SDL_BlitSurface(scaled, nullptr, vid, nullptr);
   SDL_UpdateTexture(texture, nullptr, vid->pixels, vid->pitch);
@@ -609,24 +662,31 @@ void swscale_blit(video_plugin* t)
     SDL_RenderCopy(renderer, texture, nullptr, nullptr);
   }
   SDL_RenderPresent(renderer);
+#endif
 }
 
 void swscale_setpal(SDL_Color* c)
 {
+#if 0
   SDL_SetPaletteColors(scaled->format->palette, c, 0, 32);
   SDL_SetPaletteColors(pub->format->palette, c, 0, 32);
+#endif
 }
 
 void swscale_close()
 {
+#if 0
   direct_close();
   SDL_FreeSurface(pub);
   pub = nullptr;
+#endif
 }
 
 /* ------------------------------------------------------------------------------------ */
 /* Super eagle video plugin ----------------------------------------------------------- */
 /* ------------------------------------------------------------------------------------ */
+
+#if 0
 
 /* 2X SAI Filter */
 static Uint32 colorMask = 0xF7DEF7DE;
@@ -893,7 +953,7 @@ void seagle_flip(video_plugin* t)
 /* ------------------------------------------------------------------------------------ */
 /* Scale2x video plugin --------------------------------------------------------------- */
 /* ------------------------------------------------------------------------------------ */
-void filter_scale2x(Uint8 *srcPtr, Uint32 srcPitch, 
+void filter_scale2x(Uint8 *srcPtr, Uint32 srcPitch,
                       Uint8 *dstPtr, Uint32 dstPitch,
           int width, int height)
 {
@@ -1147,8 +1207,8 @@ void ascale2x_flip(video_plugin* t __attribute__((unused)))
 /* ------------------------------------------------------------------------------------ */
 /* tv2x video plugin ------------------------------------------------------------------ */
 /* ------------------------------------------------------------------------------------ */
-void filter_tv2x(Uint8 *srcPtr, Uint32 srcPitch, 
-    Uint8 *dstPtr, Uint32 dstPitch, 
+void filter_tv2x(Uint8 *srcPtr, Uint32 srcPitch,
+    Uint8 *dstPtr, Uint32 dstPitch,
     int width, int height)
 {
   unsigned int nextlineSrc = srcPitch / sizeof(Uint16);
@@ -1193,8 +1253,8 @@ void tv2x_flip(video_plugin* t __attribute__((unused)))
 /* ------------------------------------------------------------------------------------ */
 /* Software bilinear video plugin ----------------------------------------------------- */
 /* ------------------------------------------------------------------------------------ */
-void filter_bilinear(Uint8 *srcPtr, Uint32 srcPitch, 
-    Uint8 *dstPtr, Uint32 dstPitch, 
+void filter_bilinear(Uint8 *srcPtr, Uint32 srcPitch,
+    Uint8 *dstPtr, Uint32 dstPitch,
     int width, int height)
 {
   unsigned int nextlineSrc = srcPitch / sizeof(Uint16);
@@ -1251,7 +1311,7 @@ __inline__ static void MULT(Uint16 c, float* r, float* g, float* b, float alpha)
 }
 
 __inline__ static Uint16 MAKE_RGB565(float r, float g, float b) {
-  return 
+  return
     (((static_cast<Uint8>(r)) << 11) & RED_MASK565  ) |
     (((static_cast<Uint8>(g)) <<  5) & GREEN_MASK565) |
     (((static_cast<Uint8>(b)) <<  0) & BLUE_MASK565 );
@@ -1268,8 +1328,8 @@ __inline__ float CUBIC_WEIGHT(float x) {
   return static_cast<float>(r) / 6;
 }
 
-void filter_bicubic(Uint8 *srcPtr, Uint32 srcPitch, 
-    Uint8 *dstPtr, Uint32 dstPitch, 
+void filter_bicubic(Uint8 *srcPtr, Uint32 srcPitch,
+    Uint8 *dstPtr, Uint32 dstPitch,
     int width, int height)
 {
   unsigned int nextlineSrc = srcPitch / sizeof(Uint16);
@@ -1336,7 +1396,7 @@ static Uint16 DOT_16(Uint16 c, int j, int i) {
   return c - ((c >> 2) & *(dotmatrix + ((j & 3) << 2) + (i & 3)));
 }
 
-void filter_dotmatrix(Uint8 *srcPtr, Uint32 srcPitch, 
+void filter_dotmatrix(Uint8 *srcPtr, Uint32 srcPitch,
     Uint8 *dstPtr, Uint32 dstPitch,
     int width, int height)
 {
@@ -1378,11 +1438,14 @@ void dotmat_flip(video_plugin* t __attribute__((unused)))
 /* End of video plugins --------------------------------------------------------------- */
 /* ------------------------------------------------------------------------------------ */
 
+#endif
+
 std::vector<video_plugin> video_plugin_list =
 {
   // Hardware flip version are the same as software ones since switch to SDL2. Kept for compatibility of config, would be nice to not display them in the UI.
   /* Name                     Hidden Init func      Palette func     Flip func      Close func      Half size  X, Y offsets   X, Y scale  width, height */
   {"Direct",                  false, direct_init,   direct_setpal,   direct_flip,   direct_close,   1,         0, 0,          0, 0, 0, 0 },
+/*
   {"Direct double",           true,  direct_init,   direct_setpal,   direct_flip,   direct_close,   0,         0, 0,          0, 0, 0, 0 },
   {"Half size",               true,  direct_init,   direct_setpal,   direct_flip,   direct_close,   1,         0, 0,          0, 0, 0, 0 },
   {"Double size",             true,  direct_init,   direct_setpal,   direct_flip,   direct_close,   0,         0, 0,          0, 0, 0, 0 },
@@ -1393,6 +1456,7 @@ std::vector<video_plugin> video_plugin_list =
   {"Software bilinear",       false, swscale_init,  swscale_setpal,  swbilin_flip,  swscale_close,  1,         0, 0,          0, 0, 0, 0 },
   {"Software bicubic",        false, swscale_init,  swscale_setpal,  swbicub_flip,  swscale_close,  1,         0, 0,          0, 0, 0, 0 },
   {"Dot matrix",              false, swscale_init,  swscale_setpal,  dotmat_flip,   swscale_close,  1,         0, 0,          0, 0, 0, 0 },
+*/
 #ifdef HAVE_GL
   {"OpenGL scaling",          false, glscale_init,  glscale_setpal,  glscale_flip,  glscale_close,  0,         0, 0,          0, 0, 0, 0 },
 #endif

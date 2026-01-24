@@ -5,13 +5,13 @@
 #include <fstream>
 #include <map>
 #include <string>
-#include "SDL.h"
+// #include "SDL.h"
 #include "cap32.h"
 #include "keyboard.h"
 #include "stringutils.h"
 #include "log.h"
-#include "video.h"
-#include "glfuncs.h"  // For HAVE_GL
+// #include "video.h"
+// #include "glfuncs.h"  // For HAVE_GL
 
 const struct option long_options[] =
 {
@@ -192,8 +192,10 @@ void parseArguments(int argc, char **argv, std::vector<std::string>& slot_list, 
                       << "\n";
 
             // Video plugins
+#if 0
             std::cout << "Number of video plugins available: "
                       << video_plugin_list.size() << std::endl;
+#endif
             exit(0);
             break;
 

@@ -19,7 +19,7 @@
 #ifndef VIDEO_H
 #define VIDEO_H
 
-#include "SDL.h"
+#include "SDL_stub.h"
 #include <vector>
 
 typedef struct video_plugin
@@ -51,8 +51,8 @@ video_plugin;
 extern std::vector<video_plugin> video_plugin_list;
 
 /* Only exposed for testing purposes. Do not use. */
-void compute_rects_for_tests(SDL_Rect* src, SDL_Rect* dst, Uint8 half_pixels);
+//void compute_rects_for_tests(SDL_Rect* src, SDL_Rect* dst, Uint8 half_pixels);
 
-int renderer_bpp(SDL_Renderer *sdl_renderer);
+//int renderer_bpp(SDL_Renderer *sdl_renderer);
 
 #endif

@@ -24,7 +24,8 @@
 //#include <thread>
 #include <filesystem>
 
-#include "SDL.h"
+// #include "SDL.h"
+#include "SDL_stub.h"
 
 #include "cap32.h"
 #include "crtc.h"
@@ -143,7 +144,7 @@ dword freq_table[MAX_FREQ_ENTRIES] = {
 #include "font.h"
 
 void set_osd_message(const std::string& message, uint32_t for_milliseconds) {
-   osd_timing = SDL_GetTicks() + for_milliseconds;
+   osd_timing = /*SDL_GetTicks() +*/ for_milliseconds;
    osd_message = " " + message;
 }
 
@@ -497,13 +498,14 @@ void z80_OUT_handler (reg_pair port, byte val)
                byte colour = val & 0x1f; // isolate colour value
                LOG_DEBUG("Set ink value " << static_cast<int>(GateArray.pen) << " to " << static_cast<int>(colour));
                GateArray.ink_values[GateArray.pen] = colour;
-               GateArray.palette[GateArray.pen] = SDL_MapRGB(back_surface->format,
-                     colours[colour].r, colours[colour].g, colours[colour].b);
+               GateArray.palette[GateArray.pen] = // SDL_MapRGB(back_surface->format,colours[colour].r, colours[colour].g, colours[colour].b);
+                  colours[colour].r | (colours[colour].g<<8) | (colours[colour].b<<16);
                if (GateArray.pen < 2) {
                   byte r = (static_cast<dword>(colours[GateArray.ink_values[0]].r) + static_cast<dword>(colours[GateArray.ink_values[1]].r)) >> 1;
                   byte g = (static_cast<dword>(colours[GateArray.ink_values[0]].g) + static_cast<dword>(colours[GateArray.ink_values[1]].g)) >> 1;
                   byte b = (static_cast<dword>(colours[GateArray.ink_values[0]].b) + static_cast<dword>(colours[GateArray.ink_values[1]].b)) >> 1;
-                  GateArray.palette[33] = SDL_MapRGB(back_surface->format, r, g, b); // update the mode 2 'anti-aliasing' colour
+                  // GateArray.palette[33] = SDL_MapRGB(back_surface->format, r, g, b); // update the mode 2 'anti-aliasing' colour
+                  GateArray.palette[33] = r | (g<<8) | (b<<16);
                }
                // TODO: update pbRegisterPage
             }
@@ -948,7 +950,8 @@ void print (byte *pbAddr, const char *pchStr, bool bolColour)
          break;
 
       case 8:
-         bColour = bolColour ? SDL_MapRGB(back_surface->format,255,255,255) : SDL_MapRGB(back_surface->format,0,0,0);
+         // bColour = bolColour ? SDL_MapRGB(back_surface->format,255,255,255) : SDL_MapRGB(back_surface->format,0,0,0);
+         bColour = bolColour ? 0xffffff : 0x000000;
          for (int n = 0; n < iLen; n++) {
             iIdx = static_cast<int>(pchStr[n]); // get the ASCII value
             if ((iIdx < FNT_MIN_CHAR) || (iIdx > FNT_MAX_CHAR)) { // limit it to the range of chars in the font
@@ -1330,6 +1333,7 @@ void printer_stop ()
 
 void audio_update (void *userdata __attribute__((unused)), byte *stream, int len)
 {
+#if 0
   if (CPC.snd_ready) {
     //LOG_VERBOSE("Audio: audio_update: copying " << len << " bytes");
     memcpy(stream, pbSndBuffer.get(), len);
@@ -1337,6 +1341,7 @@ void audio_update (void *userdata __attribute__((unused)), byte *stream, int len
   } else {
     LOG_VERBOSE("Audio: audio_update: skipping the copy of " << len << " bytes: sound buffer not ready");
   }
+#endif
 }
 
 
@@ -1355,6 +1360,8 @@ int audio_align_samples (int given)
 
 int audio_init ()
 {
+  std::cerr << "audio_init\n";
+#if 0
    SDL_AudioSpec desired, obtained;
 
    if (!CPC.snd_enabled) {
@@ -1397,15 +1404,18 @@ int audio_init ()
    for (int n = 0; n < 16; n++) {
       SetAYRegister(n, PSG.RegisterAY.Index[n]); // init sound emulation with valid values
    }
-
    return 0;
+#endif
+   return 1;
 }
 
 
 
 void audio_shutdown ()
 {
+#if 0
    SDL_CloseAudioDevice(audio_device_id);
+#endif
    audio_device_id = 0;
 }
 
@@ -1414,7 +1424,9 @@ void audio_shutdown ()
 void audio_pause ()
 {
    if (CPC.snd_enabled) {
-      SDL_PauseAudio(1);
+#if 0
+    SDL_PauseAudio(1);
+#endif
    }
 }
 
@@ -1423,7 +1435,9 @@ void audio_pause ()
 void audio_resume ()
 {
    if (CPC.snd_enabled) {
+#if 0
       SDL_PauseAudio(0);
+#endif
    }
 }
 
@@ -1485,7 +1499,8 @@ int video_set_palette ()
 
    for (int n = 0; n < 17; n++) { // loop for all colours + border
       int i=GateArray.ink_values[n];
-      GateArray.palette[n] = SDL_MapRGB(back_surface->format,colours[i].r,colours[i].g,colours[i].b);
+      // GateArray.palette[n] = SDL_MapRGB(back_surface->format,colours[i].r,colours[i].g,colours[i].b);
+      GateArray.palette[n] =colours[i].r | (colours[i].g<<8)  | (colours[i].b<<16);
    }
 
    return 0;
@@ -1592,11 +1607,11 @@ int video_init ()
    back_surface=vid_plugin->init(vid_plugin, CPC.scr_scale, CPC.scr_window==0);
 
    if (!back_surface) { // attempt to set the required video mode
-      LOG_ERROR("Could not set requested video mode: " << SDL_GetError());
+      LOG_ERROR("Could not set requested video mode: "/* << SDL_GetError()*/);
       return ERR_VIDEO_SET_MODE;
    }
 
-   CPC.scr_bpp = back_surface->format->BitsPerPixel; // bit depth of the surface
+   CPC.scr_bpp = 24; // back_surface->format->BitsPerPixel; // bit depth of the surface
    video_set_style(); // select rendering style
 
    int iErrCode = video_set_palette(); // init CPC colours
@@ -1634,6 +1649,7 @@ void video_display ()
 
 int joysticks_init ()
 {
+#if 0
    if(CPC.joysticks == 0) {
       return 0;
    }
@@ -1673,7 +1689,7 @@ int joysticks_init ()
         joysticks[i] = nullptr;
       }
    }
-
+#endif
    return 0;
 }
 
@@ -1688,8 +1704,9 @@ void joysticks_shutdown ()
       }
    }
 */
-
+#if 0
    SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
+#endif
 }
 
 
@@ -1697,7 +1714,7 @@ void joysticks_shutdown ()
 void update_timings()
 {
    dwTicksOffset = static_cast<int>(FRAME_PERIOD_MS / (CPC.speed/CPC_BASE_FREQUENCY_MHZ));
-   dwTicksTarget = SDL_GetTicks();
+   dwTicksTarget = 0; // SDL_GetTicks();
    dwTicksTargetFPS = dwTicksTarget;
    dwTicksTarget += dwTicksOffset;
    // These are only used for frames timing if sound is disabled. Otherwise timing is controlled by the PSG.
@@ -1951,15 +1968,16 @@ void ShowCursor(bool show)
   }
   if (shows_count < 0) shows_count = 0;
   if (shows_count > 0) {
-    SDL_ShowCursor(SDL_ENABLE);
+    //SDL_ShowCursor(SDL_ENABLE);
   } else {
-    SDL_ShowCursor(SDL_DISABLE);
+    //SDL_ShowCursor(SDL_DISABLE);
   }
 }
 
 
 SDL_Surface* prepareShowUI()
 {
+#if 0
    audio_pause();
    CPC.scr_gui_is_currently_on = true;
    ShowCursor(true);
@@ -1967,23 +1985,27 @@ SDL_Surface* prepareShowUI()
    SDL_Surface* guiBackSurface(SDL_CreateRGBSurface(0, back_surface->w, back_surface->h, 32, 0x000000FF, 0x0000FF00, 0x00FF0000, 0x00000000));
    SDL_BlitSurface(back_surface, nullptr, guiBackSurface, nullptr);
    return guiBackSurface;
+#endif
+   return nullptr;
 }
 
 void cleanupShowUI(SDL_Surface* guiBackSurface)
 {
+#if 0
    SDL_FreeSurface(guiBackSurface);
    // Clear SDL surface:
    SDL_FillRect(back_surface, nullptr, SDL_MapRGB(back_surface->format, 0, 0, 0));
    ShowCursor(false);
    CPC.scr_gui_is_currently_on = false;
    audio_resume();
+#endif
 }
 
 bool userConfirmsQuitWithoutSaving()
 {
-   auto guiBackSurface = prepareShowUI();
    bool confirmed = false;
 #if 0
+   auto guiBackSurface = prepareShowUI();
    // Show warning
    try {
       CapriceGui capriceGui(mainSDLWindow, /*bInMainView=*/true);
@@ -2167,8 +2189,9 @@ void doCleanUp ()
      fclose(pfoDebug);
    }
    #endif
-
+#if 0
    SDL_Quit();
+#endif
 }
 
 void cleanExit(int returnCode, bool askIfUnsaved)
@@ -2188,6 +2211,7 @@ void cleanExit(int returnCode, bool askIfUnsaved)
 // TODO(SDL2): Remove these 2 maps once not needed to debug keymaps anymore
 #include <map>
 std::map<SDL_Keycode, std::string> keycode_names = {
+#if 0
     {SDLK_UNKNOWN, "SDLK_UNKNOWN"},
     {SDLK_RETURN, "SDLK_RETURN"},
     {SDLK_ESCAPE, "SDLK_ESCAPE"},
@@ -2424,15 +2448,19 @@ std::map<SDL_Keycode, std::string> keycode_names = {
     {SDLK_KBDILLUMUP, "SDLK_KBDILLUMUP"},
     {SDLK_EJECT, "SDLK_EJECT"},
     {SDLK_SLEEP, "SDLK_SLEEP"},
+#endif
+/*
     #if SDL_VERSION_ATLEAST(2, 0, 6)
     {SDLK_APP1, "SDLK_APP1"},
     {SDLK_APP2, "SDLK_APP2"},
     {SDLK_AUDIOREWIND, "SDLK_AUDIOREWIND"},
     {SDLK_AUDIOFASTFORWARD, "SDLK_AUDIOFASTFORWARD"},
     #endif
+*/
 };
 
 std::map<SDL_Scancode, std::string> scancode_names = {
+#if 0
     {SDL_SCANCODE_UNKNOWN, "SDL_SCANCODE_UNKNOWN"},
     {SDL_SCANCODE_A, "SDL_SCANCODE_A"},
     {SDL_SCANCODE_B, "SDL_SCANCODE_B"},
@@ -2677,11 +2705,14 @@ std::map<SDL_Scancode, std::string> scancode_names = {
     {SDL_SCANCODE_SLEEP, "SDL_SCANCODE_SLEEP"},
     {SDL_SCANCODE_APP1, "SDL_SCANCODE_APP1"},
     {SDL_SCANCODE_APP2, "SDL_SCANCODE_APP2"},
+/*
     #if SDL_VERSION_ATLEAST(2, 0, 6)
     {SDL_SCANCODE_AUDIOREWIND, "SDL_SCANCODE_AUDIOREWIND"},
     {SDL_SCANCODE_AUDIOFASTFORWARD, "SDL_SCANCODE_AUDIOFASTFORWARD"},
     #endif
+*/
     {SDL_NUM_SCANCODES, "SDL_NUM_SCANCODES"},
+#endif
 };
 
 int cap32_main (int argc, char **argv)
@@ -2700,12 +2731,12 @@ int cap32_main (int argc, char **argv)
      binPath = std::filesystem::absolute(".");
    }
    parseArguments(argc, argv, slot_list, args);
-
+#if 0
    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER | SDL_INIT_NOPARACHUTE) < 0) { // initialize SDL
       fprintf(stderr, "SDL_Init() failed: %s\n", SDL_GetError());
       exit(-1);
    }
-
+#endif
    #ifndef APP_PATH
    if(getcwd(chAppPath, sizeof(chAppPath)-1) == nullptr) {
       fprintf(stderr, "getcwd failed: %s\n", strerror(errno));
@@ -2768,7 +2799,7 @@ int cap32_main (int argc, char **argv)
    // Give some time to the CPC to start before sending any command
    nextVirtualEventFrameCount = dwFrameCountOverall + CPC.boot_time;
 
-// ----------------------------------------------------------------------------
+  // ----------------------------------------------------------------------------
 
    update_timings();
    audio_resume();
@@ -2785,13 +2816,13 @@ int cap32_main (int argc, char **argv)
           if (!args.binFile.empty()) bin_load(args.binFile, args.binOffset);
       }
 
+#if 0
       if(!virtualKeyboardEvents.empty()
          && (nextVirtualEventFrameCount < dwFrameCountOverall)
          && (breakPointsToSkipBeforeProceedingWithVirtualEvents == 0)) {
 
          auto nextVirtualEvent = &virtualKeyboardEvents.front();
          SDL_PushEvent(nextVirtualEvent);
-
          auto keysym = nextVirtualEvent->key.keysym;
          auto evtype = nextVirtualEvent->key.type;
          LOG_DEBUG("Inserted virtual event keysym=" << int(keysym.sym) << " (" << evtype << ")");
@@ -2811,6 +2842,7 @@ int cap32_main (int argc, char **argv)
 
          virtualKeyboardEvents.pop_front();
       }
+#endif
 #if 0
       if (!devtools.empty()) {
         devtools.remove_if([](DevTools& d) { return !d.IsActive(); });
@@ -2820,6 +2852,8 @@ int cap32_main (int argc, char **argv)
         for (auto& devtool : devtools) devtool.PostUpdate();
       }
 #endif
+
+#if 0
       while (SDL_PollEvent(&event)) {
          bool processed = false;
 #if 0
@@ -3089,9 +3123,11 @@ int cap32_main (int argc, char **argv)
             //       keeping track of pause source, which will be a pain.
             case SDL_WINDOWEVENT:
             switch (event.window.event) {
+/*
               #if SDL_VERSION_ATLEAST(2, 0, 5)
               case SDL_WINDOWEVENT_TAKE_FOCUS:
               #endif
+*/
               case SDL_WINDOWEVENT_FOCUS_GAINED:
               case SDL_WINDOWEVENT_ENTER:
                 if (CPC.auto_pause) {
@@ -3112,9 +3148,11 @@ int cap32_main (int argc, char **argv)
                cleanExit(0);
          }
       }
+#endif
 
       if (!CPC.paused) { // run the emulation, as long as the user doesn't pause it
-         dwTicks = SDL_GetTicks();
+#if 0
+         dwTicks = 0; //SDL_GetTicks();
          if (dwTicks >= dwTicksTargetFPS) { // update FPS counter?
             dwFPS = dwFrameCount;
             dwFrameCount = 0;
@@ -3130,7 +3168,7 @@ int cap32_main (int argc, char **argv)
                   dwSndBufferCopied = 0;
                }
             } else if (iExitCondition == EC_CYCLE_COUNT) {
-               dwTicks = SDL_GetTicks();
+               dwTicks = 0; //SDL_GetTicks();
                if (dwTicks < dwTicksTarget) { // limit speed ?
                   if (dwTicksTarget - dwTicks > POLL_INTERVAL_MS) { // No need to burn cycles if next event is far away
                      //std::this_thread::sleep_for(std::chrono::milliseconds(POLL_INTERVAL_MS));
@@ -3140,7 +3178,7 @@ int cap32_main (int argc, char **argv)
                dwTicksTarget = dwTicks + dwTicksOffset; // prep counter for the next run
             }
          }
-
+#endif
          dword dwOffset = CPC.scr_pos - CPC.scr_base; // offset in current surface row
          if (VDU.scrln > 0) {
             CPC.scr_base = static_cast<byte *>(back_surface->pixels) + (VDU.scrln * CPC.scr_line_offs); // determine current position
@@ -3180,7 +3218,8 @@ int cap32_main (int argc, char **argv)
          if (iExitCondition == EC_FRAME_COMPLETE) { // emulation finished rendering a complete frame?
             dwFrameCountOverall++;
             dwFrameCount++;
-            if (SDL_GetTicks() < osd_timing) {
+            Uint32 ticks = 0; // SDL_GetTicks();
+            if (ticks < osd_timing) {
                print(static_cast<byte *>(back_surface->pixels) + CPC.scr_line_offs, osd_message.c_str(), true);
             } else if (CPC.scr_fps) {
                char chStr[15];

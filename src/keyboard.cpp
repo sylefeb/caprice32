@@ -8,6 +8,8 @@
 #include "fileutils.h"
 #include "log.h"
 
+#include "SDL_stub.h"
+
 extern byte bit_values[8];
 extern t_CPC CPC;
 
@@ -752,6 +754,7 @@ const std::map<const char, const CPC_KEYS> InputMapper::CPCkeysFromChars = {
     //{ '~', {0, KMOD_NONE} } // should be pound but it's not part of base ascii (it's in extended ASCII)
 };
 
+#if 0
 std::map<CapriceKey, PCKey> InputMapper::SDLkeysymFromCPCkeys_us = {
   { CPC_0,           SDLK_0 },
   { CPC_1,           SDLK_1 },
@@ -963,6 +966,7 @@ std::map<CapriceKey, PCKey> InputMapper::SDLkeysymFromCPCkeys_us = {
   { CAP32_DELAY,     SDLK_PAUSE },
   { CAP32_WAITBREAK, SDLK_PAUSE | MOD_PC_SHIFT }
 };
+#endif
 
 const std::map<const std::string, const CapriceKey> InputMapper::CPCkeysFromStrings = {
    {"CPC_0",           CPC_0},
@@ -1190,12 +1194,13 @@ const std::map<const std::string, const CapriceKey> InputMapper::CPCkeysFromStri
    {"CAP32_LD_SNAP",   CAP32_LD_SNAP},
    {"CAP32_SPEED",     CAP32_SPEED},
    {"CAP32_TAPEPLAY",  CAP32_TAPEPLAY},
-   {"CAP32_DEBUG",     CAP32_DEBUG},  
+   {"CAP32_DEBUG",     CAP32_DEBUG},
    {"CAP32_DELAY",     CAP32_DELAY},
    {"CAP32_DEVTOOLS",  CAP32_DEVTOOLS},
    {"CAP32_WAITBREAK", CAP32_WAITBREAK},
 };
 
+#if 0
 const std::map<const std::string, const PCKey> InputMapper::SDLkeysFromStrings = {
   /*@{*/
     /** @name ASCII mapped keysyms */
@@ -1365,7 +1370,7 @@ const std::map<const std::string, const PCKey> InputMapper::SDLkeysFromStrings =
   // Alt key is mapped to COPY, ignore it as a modifier
   //{ "MOD_PC_ALT", MOD_PC_ALT}
 };
-
+#endif
 
 // Format of a line: CPC_xxx\tSDLK_xxx\tMODIFIER
 // Last field is optional
@@ -1390,6 +1395,7 @@ LineParsingResult InputMapper::process_cfg_line(char *line)
         break;
       case 1:
       case 2:
+#if 0
         if (SDLkeysFromStrings.count(pch) == 0) {
           LOG_ERROR("Unknown SDL key or modifier " << pch << " found in mapping file. Ignoring it.");
           result.valid = false;
@@ -1398,6 +1404,7 @@ LineParsingResult InputMapper::process_cfg_line(char *line)
         result.sdl_key |= SDLkeysFromStrings.at(pch);
         if (field > 1) result.sdl_key_name += " ";
         result.sdl_key_name += pch;
+#endif
         break;
       default:
         break;
@@ -1407,19 +1414,20 @@ LineParsingResult InputMapper::process_cfg_line(char *line)
       break;
   }
   result.contains_mapping = true;
-  SDLkeysymFromCPCkeys[result.cpc_key] = result.sdl_key;
+//  SDLkeysymFromCPCkeys[result.cpc_key] = result.sdl_key;
   return result;
 }
 
 #define MAX_LINE_LENGTH 80
 bool InputMapper::load_layout(const std::string& filename)
 {
+#if 0
   std::filebuf fb;
   char line[MAX_LINE_LENGTH]; // sufficient for now ! TODO(sebhz): proper malloc'ing etc...
 
   bool valid = true;
   if (is_directory(filename) || (fb.open(filename, std::ios::in) == nullptr)) {
-    SDLkeysymFromCPCkeys = SDLkeysymFromCPCkeys_us;
+//    SDLkeysymFromCPCkeys = SDLkeysymFromCPCkeys_us;
   }
   else {
     std::istream is(&fb);
@@ -1451,27 +1459,29 @@ bool InputMapper::load_layout(const std::string& filename)
     fb.close();
   }
   return valid;
+#endif
+  return true;
 }
 
 void InputMapper::init()
 {
   // Ensure we're starting from a fresh state
-  SDLkeysymFromCPCkeys.clear();
-  CPCkeysFromSDLkeysym.clear();
-  SDLkeysFromChars.clear();
+//  SDLkeysymFromCPCkeys.clear();
+//  CPCkeysFromSDLkeysym.clear();
+//  SDLkeysFromChars.clear();
 
   std::string layout_file = CPC->resources_path + "/" + CPC->kbd_layout;
   load_layout(layout_file);
 
-  for (const auto &mapping : SDLkeysymFromCPCkeys) {
-    CPCkeysFromSDLkeysym[mapping.second] = mapping.first;
-  }
+//  for (const auto &mapping : SDLkeysymFromCPCkeys) {
+//    CPCkeysFromSDLkeysym[mapping.second] = mapping.first;
+//  }
 
   for (const auto &mapping : CPCkeysFromChars) {
-    if (SDLkeysymFromCPCkeys.count(mapping.second) != 0) {
-      PCKey sdl_moddedkey = SDLkeysymFromCPCkeys[mapping.second];
-      SDLkeysFromChars[mapping.first] = std::make_pair(static_cast<SDL_Keycode>(sdl_moddedkey & BITMASK_NOMOD), static_cast<SDL_Keymod>(sdl_moddedkey >> BITSHIFT_MOD));
-    }
+//    if (SDLkeysymFromCPCkeys.count(mapping.second) != 0) {
+//      PCKey sdl_moddedkey = SDLkeysymFromCPCkeys[mapping.second];
+//      SDLkeysFromChars[mapping.first] = std::make_pair(static_cast<SDL_Keycode>(sdl_moddedkey & BITMASK_NOMOD), static_cast<SDL_Keymod>(sdl_moddedkey >> BITSHIFT_MOD));
+//    }
   }
 }
 
@@ -1482,12 +1492,14 @@ CPCScancode InputMapper::CPCscancodeFromCPCkey(CPC_KEYS cpc_key) {
 CPCScancode InputMapper::CPCscancodeFromKeysym(SDL_Keysym keysym) {
     PCKey sdl_key = keysym.sym;
 
+#if 0
     if (keysym.mod & KMOD_SHIFT)                sdl_key |= MOD_PC_SHIFT;
     if (keysym.mod & KMOD_CTRL)                 sdl_key |= MOD_PC_CTRL;
     // Map right alt to Mode (AltGr). Not clear what determines whether SDL2 uses one or the other and if both can happen together.
     if (keysym.mod & (KMOD_MODE | KMOD_RALT))   sdl_key |= MOD_PC_MODE;
     // Not mapping KMOD_LALT, the key itself is mapped to CPC_COPY.
     // Ignore sticky modifiers (MOD_PC_NUM and MOD_PC_CAPS)
+#endif
 
     auto cpc_key = CPCkeysFromSDLkeysym.find(sdl_key);
     // TODO(sebhz) magic numbers are bad. Get rid of the 0xff.
@@ -1496,18 +1508,19 @@ CPCScancode InputMapper::CPCscancodeFromKeysym(SDL_Keysym keysym) {
     if (cpc_key->second & MOD_EMU_KEY)
         return cpc_key->second;
     return cpc_kbd[CPC->keyboard][cpc_key->second];
+    return 0;
 }
 
 CapriceKey InputMapper::CPCkeyFromKeysym(SDL_Keysym keysym) {
     PCKey sdl_key = keysym.sym;
-
+#if 0
     if (keysym.mod & KMOD_SHIFT)                sdl_key |= MOD_PC_SHIFT;
     if (keysym.mod & KMOD_CTRL)                 sdl_key |= MOD_PC_CTRL;
     // Map right alt to Mode (AltGr). Not clear what determines whether SDL2 uses one or the other and if both can happen together.
     if (keysym.mod & (KMOD_MODE | KMOD_RALT))   sdl_key |= MOD_PC_MODE;
     // Not mapping KMOD_LALT, the key itself is mapped to CPC_COPY.
     // Ignore sticky modifiers (MOD_PC_NUM and MOD_PC_CAPS)
-
+#endif
     auto cpc_key = CPCkeysFromSDLkeysym.find(sdl_key);
     // TODO(sebhz) magic numbers are bad. Get rid of the 0xff.
     if (cpc_key == CPCkeysFromSDLkeysym.end()) return 0xff;
@@ -1550,24 +1563,31 @@ std::list<SDL_Event> InputMapper::StringToEvents(std::string toTranslate) {
         }
         // Lookup the SDL key corresponding to this emulator command
         sdl_keysym = SDLkeysymFromCPCkeys.find(keycode);
+#if 0
         if (sdl_keysym != SDLkeysymFromCPCkeys.end()) {
           key.key.keysym.sym = static_cast<SDL_Keycode>(sdl_keysym->second & BITMASK_NOMOD);
           key.key.keysym.mod = static_cast<SDL_Keymod>(sdl_keysym->second >> BITSHIFT_MOD);
         }
+#endif
         escaped = false;
         cap32_cmd = false;
       } else {
         // key.key.keysym.scancode = ;
+#if 0
         key.key.keysym.sym = SDLkeysFromChars[c].first;
         key.key.keysym.mod = SDLkeysFromChars[c].second;
+#endif
         // key.key.keysym.unicode = c;
       }
+#if 0
       key.key.type = SDL_KEYDOWN;
       key.key.state = SDL_PRESSED;
+#endif
       result.push_back(key);
-
+#if 0
       key.key.type = SDL_KEYUP;
       key.key.state = SDL_RELEASED;
+#endif
       result.push_back(key);
     }
     return result;
