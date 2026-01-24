@@ -48,7 +48,7 @@ typedef const char *LPCTSTR;
 #include <stdio.h>
 #include <assert.h>
 #include <vector>
-#include <dirent.h>
+//#include <dirent.h>
 
 #define INTEL
 #define MAX_FILENAMELEN (MAX_PATH*2)

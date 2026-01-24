@@ -1,5 +1,7 @@
 #include "stdafx.h"
 
+#include "../libs/fat_io_lib/src/fat_filelib.h"
+
 #include "ignore_warnings.h"
 
 CDiskFile::CDiskFile()
@@ -144,7 +146,7 @@ size_t CDiskFile::Write(void *buf, size_t size)
 // seek in file, return the current position
 long CDiskFile::Seek(long pos, int mode)
 {
-	// default result 
+	// default result
 	long res=0;
 
 	// return default result if file is not open
@@ -192,7 +194,7 @@ long CDiskFile::Seek(long pos, int mode)
 // get the file size
 long CDiskFile::GetSize()
 {
-	// default result 
+	// default result
 	long res=0;
 
 	// return default result if file is not open
@@ -217,7 +219,7 @@ long CDiskFile::GetSize()
 // get file position
 long CDiskFile::GetPosition()
 {
-	// default result 
+	// default result
 	long res=0;
 
 	// return default result if file is not open
@@ -334,13 +336,13 @@ int CDiskFile::FindFile(char *result, const char *filename, const char *filter)
 				dirpath = ".";
 
 			// open the selected path
-			DIR *pdir = opendir(dirpath);
-			if (pdir) {
-				dirent *pent;
+			FL_DIR pdir;
+			if (fl_opendir(dirpath,&pdir)) {
+				struct fs_dir_ent pent;
 				const char *pattern = filename + pathlen;
 
 				// iterate all directory entries
-				while (pent = readdir(pdir)) {
+				while (fl_readdir(&pdir,&pent) == 0) {
 					// skip any entry that is not a regular file
 #if defined _DIRENT_HAVE_D_TYPE || defined HAVE_STRUCT_DIRENT_D_TYPE
 					if (pent->d_type != DT_REG)
@@ -348,7 +350,7 @@ int CDiskFile::FindFile(char *result, const char *filename, const char *filter)
 #endif
 
 					// check entry to match the filename pattern
-					char *fn = pent->d_name;
+					char *fn = pent.filename;
 					if (FileNameMatch(pattern, fn)) {
 						// if matches, check entry to match the filter pattern if filter is specified
 						if (!filter || FileNameMatch(filter, fn)) {
@@ -366,7 +368,7 @@ int CDiskFile::FindFile(char *result, const char *filename, const char *filter)
 					}
 				}
 
-				closedir(pdir);
+				fl_closedir(&pdir);
 			}
 
 			// free path buffer
@@ -409,7 +411,7 @@ int CDiskFile::FileNameMatch(const char *pattern, const char *filename)
 	// length of the current pattern
 	int patternlength = 0;
 
-	// find the length of the current pattern; either the remaining string or the string until the next * 
+	// find the length of the current pattern; either the remaining string or the string until the next *
 	while (pattern[patternlength]) {
 		if (pattern[patternlength] == '*')
 			break;
@@ -457,7 +459,7 @@ int CDiskFile::FileNameMatch(const char *pattern, const char *filename)
 			// remove the matched segment from the filename
 			filename += patternlength + namepos;
 
-			// calculate the remaining filename length 
+			// calculate the remaining filename length
 			namelength -= patternlength + namepos;
 
 			// empty pattern segment

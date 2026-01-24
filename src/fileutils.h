@@ -1,7 +1,7 @@
 // Caprice 32
 // File IO functions
 
-#include <dirent.h>
+// #include <dirent.h>
 #include <string>
 #include <vector>
 

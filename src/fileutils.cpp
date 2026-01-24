@@ -1,7 +1,8 @@
 // Caprice 32
 // File IO functions
 
-#include <dirent.h>
+// #include <dirent.h>
+#include "../libs/fat_io_lib/src/fat_filelib.h"
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -40,7 +41,7 @@ bool is_directory(std::string filepath) {
 // Returns a vector containing the names of the files in the specified directory
 std::vector<std::string> listDirectory(std::string &directory) {
    std::vector<std::string> s;
-
+#if 0
    if (directory[directory.size() - 1] != '/') {
       directory += "/";
    }
@@ -58,6 +59,20 @@ std::vector<std::string> listDirectory(std::string &directory) {
        }
    }
    closedir(pDir);
+#else
+    FL_DIR dirstat;
+    if (fl_opendir(directory.c_str(), &dirstat))
+    {
+        struct fs_dir_ent dirent;
+        while (fl_readdir(&dirstat, &dirent) == 0) {
+            if (!dirent.is_dir) {
+              s.push_back(std::string(dirent.filename));
+            }
+        }
+        fl_closedir(&dirstat);
+    }
+#endif
+
    sort(s.begin(), s.end()); // sort elements
    return s;
 }

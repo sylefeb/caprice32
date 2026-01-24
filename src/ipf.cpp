@@ -4,7 +4,7 @@
 #ifdef WINDOWS
 #include <windows.h>
 #else
-#include <dlfcn.h>
+// #include <dlfcn.h>
 #endif
 
 #include "cap32.h"
