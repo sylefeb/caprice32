@@ -11,6 +11,7 @@
 
 void GetLocalTime(LPSYSTEMTIME lpSystemTime)
 {
+#if 0
         time_t t = time(NULL);
         struct tm *tp = localtime(&t);
 
@@ -23,6 +24,16 @@ void GetLocalTime(LPSYSTEMTIME lpSystemTime)
         lpSystemTime->wSecond = tp->tm_sec;
         // we don't have milliseconds in struct tm
         lpSystemTime->wMilliseconds = 0;
+#else
+        lpSystemTime->wYear = 1900;
+        lpSystemTime->wMonth = 1;
+        lpSystemTime->wDayOfWeek = 0;
+        lpSystemTime->wDay = 0;
+        lpSystemTime->wHour = 0;
+        lpSystemTime->wMinute = 0;
+        lpSystemTime->wSecond = 0;
+        lpSystemTime->wMilliseconds = 0;
+#endif
 }
 
 #endif

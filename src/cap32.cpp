@@ -86,7 +86,7 @@ extern SDL_Window* mainSDLWindow;
 
 SDL_AudioDeviceID audio_device_id = 0;
 SDL_Surface *back_surface = nullptr;
-video_plugin* vid_plugin;
+// video_plugin* vid_plugin;
 SDL_Joystick* joysticks[MAX_NB_JOYSTICKS];
 // std::list<DevTools> devtools;
 
@@ -989,6 +989,7 @@ int emulator_patch_ROM ()
 
    if(CPC.model <= 2) { // Normal CPC range
       std::string romFilename = CPC.rom_path + "/" + chROMFile[CPC.model];
+  printf("emulator_patch_ROM [1]\n");
       if ((pfileObject = fopen(romFilename.c_str(), "rb")) != nullptr) { // load CPC OS + Basic
          if(fread(pbROM, 2*16384, 1, pfileObject) != 1) {
             fclose(pfileObject);
@@ -998,9 +999,12 @@ int emulator_patch_ROM ()
          pbROMlo = pbROM;
          fclose(pfileObject);
       } else {
+  printf("emulator_patch_ROM [2] NO ROM\n");
          LOG_ERROR("Couldn't open ROM file '" << romFilename << "'");
          return ERR_CPC_ROM_MISSING;
       }
+printf("emulator_patch_ROM [3]\n");
+
    } else { // Plus range
       if (pbCartridgePages[0] != nullptr) {
          pbROMlo = pbCartridgePages[0];
@@ -1113,16 +1117,19 @@ int input_init ()
 
 int emulator_init ()
 {
+  printf("emulator_init [1]\n");
    if (input_init()) {
       fprintf(stderr, "input_init() failed. Aborting.\n");
       exit(-1);
    }
+  printf("emulator_init [2]\n");
 
    // Cartridge must be loaded before init as ROM needs to be present.
    cartridge_load();
    int iErr, iRomNum;
    byte *pchRomData;
 
+  printf("emulator_init [3]\n");
    pbGPBuffer = new byte [128*1024]; // attempt to allocate the general purpose buffer
    pbRAMbuffer = new byte [CPC.ram_size*1024 + 1]; // allocate memory for desired amount of RAM
    // Ensure 1 byte is available before pbRAM as prerender_normal*_plus can read it
@@ -1134,11 +1141,13 @@ int emulator_init ()
    pbExpansionROM = pbROM + 16384;
    memset(memmap_ROM, 0, sizeof(memmap_ROM[0]) * 256); // clear the expansion ROM map
    ga_init_banking(membank_config, GateArray.RAM_bank); // init the CPC memory banking map
+  printf("emulator_init [4]\n");
    if ((iErr = emulator_patch_ROM())) {
       LOG_ERROR("Failed patching the ROM");
       return iErr;
    }
 
+  printf("emulator_init [5]\n");
    for (iRomNum = 0; iRomNum < 16; iRomNum++) { // loop for ROMs 0-15
       if (!CPC.rom_file[iRomNum].empty()) { // is a ROM image specified for this slot?
          std::string rom_file = CPC.rom_file[iRomNum];
@@ -1152,6 +1161,7 @@ int emulator_init ()
          pchRomData = new byte [16384]; // allocate 16K
          memset(pchRomData, 0, 16384); // clear memory
          std::string romFilename = CPC.rom_path + "/" + rom_file;
+  printf("emulator_init [6]\n");
          if ((pfileObject = fopen(romFilename.c_str(), "rb")) != nullptr) { // attempt to open the ROM image
             if(fread(pchRomData, 128, 1, pfileObject) != 1) { // read 128 bytes of ROM data
               fclose(pfileObject);
@@ -1209,6 +1219,7 @@ int emulator_init ()
             delete [] pchRomData; // free memory on error
             CPC.rom_file[iRomNum] = "";
          }
+  printf("emulator_init [7]\n");
       }
    }
    if (CPC.mf2) { // Multiface 2 enabled?
@@ -1360,7 +1371,6 @@ int audio_align_samples (int given)
 
 int audio_init ()
 {
-  std::cerr << "audio_init\n";
 #if 0
    SDL_AudioSpec desired, obtained;
 
@@ -1453,6 +1463,8 @@ void cpc_resume()
    audio_resume();
 }
 
+void direct_setpal(SDL_Color* c);
+
 int video_set_palette ()
 {
    if (!CPC.scr_tube) {
@@ -1495,7 +1507,7 @@ int video_set_palette ()
       }
    }
 
-   vid_plugin->set_palette(colours);
+   direct_setpal(colours);
 
    for (int n = 0; n < 17; n++) { // loop for all colours + border
       int i=GateArray.ink_values[n];
@@ -1510,7 +1522,7 @@ int video_set_palette ()
 
 void video_set_style ()
 {
-   if (vid_plugin->half_pixels)
+   if (1/*vid_plugin->half_pixels*/)
    {
       dwXScale = 1;
       dwYScale = 1;
@@ -1598,27 +1610,35 @@ void mouse_init ()
   ShowCursor(CPC.phazer_emulation);
 }
 
+SDL_Surface* direct_init(video_plugin* t, int scale, bool fs);
 
 int video_init ()
 {
-   vid_plugin=&video_plugin_list[CPC.scr_style];
-   LOG_DEBUG("video_init: vid_plugin = " << vid_plugin->name)
+printf("video_init [1]\n");
+   //vid_plugin=&video_plugin_list[CPC.scr_style];
+   //LOG_DEBUG("video_init: vid_plugin = " << vid_plugin->name)
 
-   back_surface=vid_plugin->init(vid_plugin, CPC.scr_scale, CPC.scr_window==0);
+printf("video_init [2]\n");
+   back_surface=direct_init(/*vid_plugin*/nullptr, CPC.scr_scale, CPC.scr_window==0);
 
+printf("video_init [3]\n");
    if (!back_surface) { // attempt to set the required video mode
       LOG_ERROR("Could not set requested video mode: "/* << SDL_GetError()*/);
       return ERR_VIDEO_SET_MODE;
    }
 
+printf("video_init [4]\n");
    CPC.scr_bpp = 24; // back_surface->format->BitsPerPixel; // bit depth of the surface
    video_set_style(); // select rendering style
 
+printf("video_init [5]\n");
    int iErrCode = video_set_palette(); // init CPC colours
    if (iErrCode) {
       return iErrCode;
    }
    asic_set_palette();
+
+printf("video_init [6]\n");
 
    CPC.scr_bps = back_surface->pitch; // rendered screen line length in bytes
    CPC.scr_line_offs = CPC.scr_bps * dwYScale;
@@ -1626,7 +1646,9 @@ int video_init ()
    CPC.scr_base = static_cast<byte *>(back_surface->pixels); // memory address of back buffer
    CPC.scr_gui_is_currently_on = false;
 
+printf("video_init [7]\n");
    crtc_init();
+printf("video_init [8]\n");
 
    return 0;
 }
@@ -1635,14 +1657,16 @@ int video_init ()
 
 void video_shutdown ()
 {
-   vid_plugin->close();
+   //vid_plugin->close();
 }
 
 
+void direct_flip(video_plugin*);
 
 void video_display ()
 {
-   vid_plugin->flip(vid_plugin);
+  direct_flip(nullptr);
+   // vid_plugin->flip(vid_plugin);
 }
 
 
@@ -1808,10 +1832,12 @@ void loadConfiguration (t_CPC &CPC, const std::string& configFilename)
    CPC.scr_scale = conf.getIntValue("video", "scr_scale", 2);
    CPC.scr_preserve_aspect_ratio = conf.getIntValue("video", "scr_preserve_aspect_ratio", 1);
    CPC.scr_style = conf.getIntValue("video", "scr_style", 1);
+#if 0
    if (CPC.scr_style >= video_plugin_list.size()) {
       CPC.scr_style = DEFAULT_VIDEO_PLUGIN;
       LOG_ERROR("Unsupported video plugin specified - defaulting to plugin " << video_plugin_list[DEFAULT_VIDEO_PLUGIN].name);
    }
+#endif
    CPC.scr_oglfilter = conf.getIntValue("video", "scr_oglfilter", 1) & 1;
    CPC.scr_oglscanlines = conf.getIntValue("video", "scr_oglscanlines", 30);
    if (CPC.scr_oglscanlines > 100) {
@@ -2722,7 +2748,8 @@ int cap32_main (int argc, char **argv)
    bool bin_loaded = false;
    SDL_Event event;
    std::vector<std::string> slot_list;
-
+printf("[1]\n");
+#if 0
    try {
      binPath = std::filesystem::absolute(std::filesystem::path(argv[0]).parent_path());
    } catch(...) {
@@ -2730,7 +2757,10 @@ int cap32_main (int argc, char **argv)
      // binPath is only use for bundles anyway, where this is not the case.
      binPath = std::filesystem::absolute(".");
    }
+#endif
+  binPath = "/";
    parseArguments(argc, argv, slot_list, args);
+printf("[2]\n");
 #if 0
    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER | SDL_INIT_NOPARACHUTE) < 0) { // initialize SDL
       fprintf(stderr, "SDL_Init() failed: %s\n", SDL_GetError());
@@ -2746,20 +2776,28 @@ int cap32_main (int argc, char **argv)
       strncpy(chAppPath,APP_PATH,_MAX_PATH);
    #endif
 
+printf("[3]\n");
+#if 0
    loadConfiguration(CPC, getConfigurationFilename()); // retrieve the emulator configuration
    if (CPC.printer) {
       if (!printer_start()) { // start capturing printer output, if enabled
          CPC.printer = 0;
       }
    }
+#endif
 
+printf("[4a]\n");
    z80_init_tables(); // init Z80 emulation
+printf("[4b]\n");
 
    if (video_init()) {
+    printf("[5 fail]\n");
       fprintf(stderr, "video_init() failed. Aborting.\n");
       cleanExit(-1);
    }
+printf("[5]\n");
    mouse_init();
+printf("[6]\n");
 
    if (audio_init()) {
       fprintf(stderr, "audio_init() failed. Disabling sound.\n");
@@ -2769,31 +2807,38 @@ int cap32_main (int argc, char **argv)
       // To test it, set SDL_AUDIODRIVER=dsp or some other unsupported value.
       CPC.snd_enabled = 0; // disable sound emulation
    }
+printf("[7]\n");
 
    if (joysticks_init()) {
       fprintf(stderr, "joysticks_init() failed. Joysticks won't work.\n");
    }
+printf("[8]\n");
 
 #ifdef DEBUG
    pfoDebug = fopen("./debug.txt", "wt");
 #endif
 
+printf("[9]\n");
    // Extract files to be loaded from the command line args
    fillSlots(slot_list, CPC);
+printf("[10]\n");
 
    // Must be done before emulator_init()
    CPC.InputMapper = new InputMapper(&CPC);
 
+printf("[11]\n");
    // emulator_init must be called before loading files as they require
    // pbGPBuffer to be initialized.
    if (emulator_init()) {
       fprintf(stderr, "emulator_init() failed. Aborting.\n");
       cleanExit(-1);
    }
+printf("[12]\n");
 
    // Really load the various drives, if needed
    loadSlots();
 
+printf("[13]\n");
    // Fill the buffer with autocmd if provided
    virtualKeyboardEvents = CPC.InputMapper->StringToEvents(args.autocmd);
    // Give some time to the CPC to start before sending any command

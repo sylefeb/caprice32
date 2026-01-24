@@ -145,9 +145,9 @@ static SDL_Surface *make_surface()
   return srf;
 }
 
-SDL_Surface* direct_init(video_plugin* t, int scale, bool fs)
+SDL_Surface* direct_init(video_plugin*, int scale, bool fs)
 {
-  std::cerr << "######################### SCALE = " << scale << '\n';
+  printf("direct_init [1]\n");
 #if 0
   SDL_CreateWindowAndRenderer(CPC_VISIBLE_SCR_WIDTH*scale, CPC_VISIBLE_SCR_HEIGHT*scale, (fs?SDL_WINDOW_FULLSCREEN_DESKTOP:SDL_WINDOW_SHOWN), &mainSDLWindow, &renderer);
   if (!mainSDLWindow || !renderer) return nullptr;
@@ -186,7 +186,7 @@ void direct_setpal(SDL_Color* c)
 
 #include "tga.h"
 
-void direct_flip(video_plugin* t)
+void direct_flip(video_plugin*)
 {
 #if 0
   SDL_UpdateTexture(texture, nullptr, vid->pixels, vid->pitch);

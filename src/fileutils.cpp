@@ -95,10 +95,12 @@ std::vector<std::string> listDirectoryExt(std::string &directory, const std::str
 
 #define TIME_STRING_MAX_LENGTH 80
 std::string getDateString() {
+  /*
   char dateString[TIME_STRING_MAX_LENGTH]; // Should be more than enough
   time_t t = std::time(nullptr);
   if (std::strftime(dateString, sizeof(dateString), "%Y%m%d_%H%M%S", std::localtime(&t))) {
     return std::string(dateString);
   }
+    */
   return "unknown_date";
 }
