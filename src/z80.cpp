@@ -363,7 +363,11 @@ inline void write_mem(word addr, byte val) {
     //LOG_DEBUG("Pass write to ASIC: " << static_cast<int>(val) << " at " << addr);
     if(!asic_register_page_write(addr, val)) return;
   }
+  //if (addr >= 0xc000 && addr <= 0xffff) {
+  //  printf("[screen] write %d at %x\n",static_cast<int>(val),addr);
+  //}
   //LOG_DEBUG("Write " << static_cast<int>(val) << " at " << addr);
+  //printf("Write %d at %d\n",static_cast<int>(val),addr);
   write_mem_no_watchpoint(addr, val);
 }
 

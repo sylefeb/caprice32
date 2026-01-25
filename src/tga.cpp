@@ -30,6 +30,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+extern "C" {
+#include "../libs/fat_io_lib/src/fat_filelib.h"
+}
+
 #include "tga.h"
 
 #pragma pack(1)
@@ -103,7 +107,7 @@ GetTextureInfo (const struct tga_header_t *header,t_image_nfo *texinfo)
 }
 
 static void
-ReadTGA8bits (FILE *fp, const uchar *colormap,t_image_nfo *texinfo)
+ReadTGA8bits (FL_FILE *fp, const uchar *colormap,t_image_nfo *texinfo)
 {
   unsigned int i;
   uchar color;
@@ -111,7 +115,7 @@ ReadTGA8bits (FILE *fp, const uchar *colormap,t_image_nfo *texinfo)
   for (i = 0; i < texinfo->width * texinfo->height; ++i)
   {
     /* Read index color byte */
-    color = (uchar)fgetc (fp);
+    color = (uchar)fl_fgetc (fp);
 
     /* Convert to RGB 24 bits */
     texinfo->pixels[(i * 3) + 2] = colormap[(color * 3) + 0];
@@ -121,7 +125,7 @@ ReadTGA8bits (FILE *fp, const uchar *colormap,t_image_nfo *texinfo)
 }
 
 static void
-ReadTGA16bits (FILE *fp, t_image_nfo *texinfo)
+ReadTGA16bits (FL_FILE *fp, t_image_nfo *texinfo)
 {
   unsigned int i;
   unsigned short color;
@@ -129,7 +133,7 @@ ReadTGA16bits (FILE *fp, t_image_nfo *texinfo)
   for (i = 0; i < texinfo->width * texinfo->height; ++i)
   {
     /* Read color word */
-    color = fgetc (fp) + (fgetc (fp) << 8);
+    color = fl_fgetc (fp) + (fl_fgetc (fp) << 8);
 
     /* Convert BGR to RGB */
     texinfo->pixels[(i * 3) + 0] = (uchar)(((color & 0x7C00) >> 10) << 3);
@@ -139,61 +143,61 @@ ReadTGA16bits (FILE *fp, t_image_nfo *texinfo)
 }
 
 static void
-ReadTGA24bits (FILE *fp, t_image_nfo *texinfo)
+ReadTGA24bits (FL_FILE *fp, t_image_nfo *texinfo)
 {
   unsigned int i;
 
   for (i = 0; i < texinfo->width * texinfo->height; ++i)
   {
     /* Read and convert BGR to RGB */
-    texinfo->pixels[(i * 3) + 2] = (uchar)fgetc (fp);
-    texinfo->pixels[(i * 3) + 1] = (uchar)fgetc (fp);
-    texinfo->pixels[(i * 3) + 0] = (uchar)fgetc (fp);
+    texinfo->pixels[(i * 3) + 2] = (uchar)fl_fgetc (fp);
+    texinfo->pixels[(i * 3) + 1] = (uchar)fl_fgetc (fp);
+    texinfo->pixels[(i * 3) + 0] = (uchar)fl_fgetc (fp);
   }
 }
 
 static void
-ReadTGA32bits (FILE *fp, t_image_nfo *texinfo)
+ReadTGA32bits (FL_FILE *fp, t_image_nfo *texinfo)
 {
   unsigned int i;
 
   for (i = 0; i < texinfo->width * texinfo->height; ++i)
   {
     /* Read and convert BGRA to RGBA */
-    texinfo->pixels[(i * 4) + 2] = (uchar)fgetc (fp);
-    texinfo->pixels[(i * 4) + 1] = (uchar)fgetc (fp);
-    texinfo->pixels[(i * 4) + 0] = (uchar)fgetc (fp);
-    texinfo->pixels[(i * 4) + 3] = (uchar)fgetc (fp);
+    texinfo->pixels[(i * 4) + 2] = (uchar)fl_fgetc (fp);
+    texinfo->pixels[(i * 4) + 1] = (uchar)fl_fgetc (fp);
+    texinfo->pixels[(i * 4) + 0] = (uchar)fl_fgetc (fp);
+    texinfo->pixels[(i * 4) + 3] = (uchar)fl_fgetc (fp);
   }
 }
 
 static void
-ReadTGAgray8bits (FILE *fp, t_image_nfo *texinfo)
+ReadTGAgray8bits (FL_FILE *fp, t_image_nfo *texinfo)
 {
   unsigned int i;
 
   for (i = 0; i < texinfo->width * texinfo->height; ++i)
   {
     /* Read grayscale color byte */
-    texinfo->pixels[i] = (uchar)fgetc (fp);
+    texinfo->pixels[i] = (uchar)fl_fgetc (fp);
   }
 }
 
 static void
-ReadTGAgray16bits (FILE *fp, t_image_nfo *texinfo)
+ReadTGAgray16bits (FL_FILE *fp, t_image_nfo *texinfo)
 {
   unsigned int i;
 
   for (i = 0; i < texinfo->width * texinfo->height; ++i)
   {
     /* Read grayscale color + alpha channel bytes */
-    texinfo->pixels[(i * 2) + 0] = (uchar)fgetc (fp);
-    texinfo->pixels[(i * 2) + 1] = (uchar)fgetc (fp);
+    texinfo->pixels[(i * 2) + 0] = (uchar)fl_fgetc (fp);
+    texinfo->pixels[(i * 2) + 1] = (uchar)fl_fgetc (fp);
   }
 }
 
 static void
-ReadTGA8bitsRLE (FILE *fp, const uchar *colormap,
+ReadTGA8bitsRLE (FL_FILE *fp, const uchar *colormap,
 t_image_nfo *texinfo)
 {
   int i, size;
@@ -204,13 +208,13 @@ t_image_nfo *texinfo)
   while (ptr < texinfo->pixels + (texinfo->width * texinfo->height) * 3)
   {
     /* Read first byte */
-    packet_header = (uchar)fgetc (fp);
+    packet_header = (uchar)fl_fgetc (fp);
     size = 1 + (packet_header & 0x7f);
 
     if (packet_header & 0x80)
     {
       /* Run-length packet */
-      color = (uchar)fgetc (fp);
+      color = (uchar)fl_fgetc (fp);
 
       for (i = 0; i < size; ++i, ptr += 3)
       {
@@ -224,7 +228,7 @@ t_image_nfo *texinfo)
       /* Non run-length packet */
       for (i = 0; i < size; ++i, ptr += 3)
       {
-        color = (uchar)fgetc (fp);
+        color = (uchar)fl_fgetc (fp);
 
         ptr[0] = colormap[(color * 3) + 2];
         ptr[1] = colormap[(color * 3) + 1];
@@ -235,7 +239,7 @@ t_image_nfo *texinfo)
 }
 
 static void
-ReadTGA16bitsRLE (FILE *fp, t_image_nfo *texinfo)
+ReadTGA16bitsRLE (FL_FILE *fp, t_image_nfo *texinfo)
 {
   int i, size;
   unsigned short color;
@@ -245,13 +249,13 @@ ReadTGA16bitsRLE (FILE *fp, t_image_nfo *texinfo)
   while (ptr < texinfo->pixels + (texinfo->width * texinfo->height) * 3)
   {
     /* Read first byte */
-    packet_header = fgetc (fp);
+    packet_header = fl_fgetc (fp);
     size = 1 + (packet_header & 0x7f);
 
     if (packet_header & 0x80)
     {
       /* Run-length packet */
-      color = fgetc (fp) + (fgetc (fp) << 8);
+      color = fl_fgetc (fp) + (fl_fgetc (fp) << 8);
 
       for (i = 0; i < size; ++i, ptr += 3)
       {
@@ -265,7 +269,7 @@ ReadTGA16bitsRLE (FILE *fp, t_image_nfo *texinfo)
       /* Non run-length packet */
       for (i = 0; i < size; ++i, ptr += 3)
       {
-        color = fgetc (fp) + (fgetc (fp) << 8);
+        color = fl_fgetc (fp) + (fl_fgetc (fp) << 8);
 
         ptr[0] = (uchar)(((color & 0x7C00) >> 10) << 3);
         ptr[1] = (uchar)(((color & 0x03E0) >>  5) << 3);
@@ -276,7 +280,7 @@ ReadTGA16bitsRLE (FILE *fp, t_image_nfo *texinfo)
 }
 
 static void
-ReadTGA24bitsRLE (FILE *fp, t_image_nfo *texinfo)
+ReadTGA24bitsRLE (FL_FILE *fp, t_image_nfo *texinfo)
 {
   int i, size;
   uchar rgb[3];
@@ -286,13 +290,13 @@ ReadTGA24bitsRLE (FILE *fp, t_image_nfo *texinfo)
   while (ptr < texinfo->pixels + (texinfo->width * texinfo->height) * 3)
   {
     /* Read first byte */
-    packet_header = (uchar)fgetc (fp);
+    packet_header = (uchar)fl_fgetc (fp);
     size = 1 + (packet_header & 0x7f);
 
     if (packet_header & 0x80)
     {
       /* Run-length packet */
-      fread (rgb, sizeof (uchar), 3, fp);
+      fl_fread (rgb, sizeof (uchar), 3, fp);
 
       for (i = 0; i < size; ++i, ptr += 3)
       {
@@ -306,16 +310,16 @@ ReadTGA24bitsRLE (FILE *fp, t_image_nfo *texinfo)
       /* Non run-length packet */
       for (i = 0; i < size; ++i, ptr += 3)
       {
-        ptr[2] = (uchar)fgetc (fp);
-        ptr[1] = (uchar)fgetc (fp);
-        ptr[0] = (uchar)fgetc (fp);
+        ptr[2] = (uchar)fl_fgetc (fp);
+        ptr[1] = (uchar)fl_fgetc (fp);
+        ptr[0] = (uchar)fl_fgetc (fp);
       }
     }
   }
 }
 
 static void
-ReadTGA32bitsRLE (FILE *fp, t_image_nfo *texinfo)
+ReadTGA32bitsRLE (FL_FILE *fp, t_image_nfo *texinfo)
 {
   int i, size;
   uchar rgba[4];
@@ -325,13 +329,13 @@ ReadTGA32bitsRLE (FILE *fp, t_image_nfo *texinfo)
   while (ptr < texinfo->pixels + (texinfo->width * texinfo->height) * 4)
   {
     /* Read first byte */
-    packet_header = (uchar)fgetc (fp);
+    packet_header = (uchar)fl_fgetc (fp);
     size = 1 + (packet_header & 0x7f);
 
     if (packet_header & 0x80)
     {
       /* Run-length packet */
-      fread (rgba, sizeof (uchar), 4, fp);
+      fl_fread (rgba, sizeof (uchar), 4, fp);
 
       for (i = 0; i < size; ++i, ptr += 4)
       {
@@ -346,17 +350,17 @@ ReadTGA32bitsRLE (FILE *fp, t_image_nfo *texinfo)
       /* Non run-length packet */
       for (i = 0; i < size; ++i, ptr += 4)
       {
-        ptr[2] = (uchar)fgetc (fp);
-        ptr[1] = (uchar)fgetc (fp);
-        ptr[0] = (uchar)fgetc (fp);
-        ptr[3] = (uchar)fgetc (fp);
+        ptr[2] = (uchar)fl_fgetc (fp);
+        ptr[1] = (uchar)fl_fgetc (fp);
+        ptr[0] = (uchar)fl_fgetc (fp);
+        ptr[3] = (uchar)fl_fgetc (fp);
       }
     }
   }
 }
 
 static void
-ReadTGAgray8bitsRLE (FILE *fp, t_image_nfo *texinfo)
+ReadTGAgray8bitsRLE (FL_FILE *fp, t_image_nfo *texinfo)
 {
   int i, size;
   uchar color;
@@ -366,13 +370,13 @@ ReadTGAgray8bitsRLE (FILE *fp, t_image_nfo *texinfo)
   while (ptr < texinfo->pixels + (texinfo->width * texinfo->height))
   {
     /* Read first byte */
-    packet_header = (uchar)fgetc (fp);
+    packet_header = (uchar)fl_fgetc (fp);
     size = 1 + (packet_header & 0x7f);
 
     if (packet_header & 0x80)
     {
       /* Run-length packet */
-      color = (uchar)fgetc (fp);
+      color = (uchar)fl_fgetc (fp);
 
       for (i = 0; i < size; ++i, ptr++)
         *ptr = color;
@@ -381,13 +385,13 @@ ReadTGAgray8bitsRLE (FILE *fp, t_image_nfo *texinfo)
     {
       /* Non run-length packet */
       for (i = 0; i < size; ++i, ptr++)
-        *ptr = (uchar)fgetc (fp);
+        *ptr = (uchar)fl_fgetc (fp);
     }
   }
 }
 
 static void
-ReadTGAgray16bitsRLE (FILE *fp, t_image_nfo *texinfo)
+ReadTGAgray16bitsRLE (FL_FILE *fp, t_image_nfo *texinfo)
 {
   int i, size;
   uchar color, alpha;
@@ -397,14 +401,14 @@ ReadTGAgray16bitsRLE (FILE *fp, t_image_nfo *texinfo)
   while (ptr < texinfo->pixels + (texinfo->width * texinfo->height) * 2)
   {
     /* Read first byte */
-    packet_header = (uchar)fgetc (fp);
+    packet_header = (uchar)fl_fgetc (fp);
     size = 1 + (packet_header & 0x7f);
 
     if (packet_header & 0x80)
     {
       /* Run-length packet */
-      color = (uchar)fgetc (fp);
-      alpha = (uchar)fgetc (fp);
+      color = (uchar)fl_fgetc (fp);
+      alpha = (uchar)fl_fgetc (fp);
 
       for (i = 0; i < size; ++i, ptr += 2)
       {
@@ -417,8 +421,8 @@ ReadTGAgray16bitsRLE (FILE *fp, t_image_nfo *texinfo)
       /* Non run-length packet */
       for (i = 0; i < size; ++i, ptr += 2)
       {
-        ptr[0] = (uchar)fgetc (fp);
-        ptr[1] = (uchar)fgetc (fp);
+        ptr[0] = (uchar)fl_fgetc (fp);
+        ptr[1] = (uchar)fl_fgetc (fp);
       }
     }
   }
@@ -426,13 +430,13 @@ ReadTGAgray16bitsRLE (FILE *fp, t_image_nfo *texinfo)
 
 t_image_nfo *ReadTGAFile(const char *filename)
 {
-  FILE *fp;
+  FL_FILE *fp;
   t_image_nfo *texinfo;
   struct tga_header_t header;
   uchar *colormap = NULL;
 
   // fopen_s(&fp,filename, "rb");
-  fp = fopen(filename, "rb");
+  fp = (FL_FILE*)fl_fopen(filename, "rb");
   if (!fp)
   {
     fprintf (stderr, "ReadTGAFile - error: couldn't open \"%s\"!\n", filename);
@@ -440,11 +444,11 @@ t_image_nfo *ReadTGAFile(const char *filename)
   }
 
   /* Read header */
-  fread (&header, sizeof (struct tga_header_t), 1, fp);
+  fl_fread (&header, sizeof (struct tga_header_t), 1, fp);
 
   texinfo = new t_image_nfo;
   GetTextureInfo (&header, texinfo);
-  fseek (fp, header.id_lenght, SEEK_CUR);
+  fl_fseek (fp, header.id_lenght, SEEK_CUR);
 
   /* Memory allocation */
   texinfo->pixels = new uchar[texinfo->width * texinfo->height * (texinfo->depth/8)];
@@ -459,7 +463,7 @@ t_image_nfo *ReadTGAFile(const char *filename)
   {
     /* NOTE: color map is stored in BGR format */
     colormap = new uchar[ header.cm_length * (header.cm_size >> 3) ];
-    fread (colormap, sizeof (uchar), header.cm_length * (header.cm_size >> 3), fp);
+    fl_fread (colormap, sizeof (uchar), header.cm_length * (header.cm_size >> 3), fp);
   }
 
   /* Read image data */
@@ -545,7 +549,7 @@ t_image_nfo *ReadTGAFile(const char *filename)
     delete[] (colormap);
   }
 
-  fclose (fp);
+  fl_fclose (fp);
   return texinfo;
 }
 
@@ -556,7 +560,7 @@ S. Lefebvre
 
 */
 
-bool SaveTGAFile(const char *name,t_image_nfo *img) 
+bool SaveTGAFile(const char *name,t_image_nfo *img)
 {
 #pragma pack(push, 1)
   /* TGA header */
@@ -568,7 +572,7 @@ bool SaveTGAFile(const char *name,t_image_nfo *img)
 
     short	cm_first_entry;       /* colormap origin */
     short	cm_length;            /* colormap length */
-    uchar cm_size;            /* colormap size */
+    uchar cm_size;              /* colormap size */
 
     short	x_origin;             /* bottom left x coord origin */
     short	y_origin;             /* bottom left y coord origin */
@@ -581,13 +585,13 @@ bool SaveTGAFile(const char *name,t_image_nfo *img)
   };
 #pragma pack(pop)
 
-  if (img->depth != 24 && img->depth != 32) { 
+  if (img->depth != 24 && img->depth != 32) {
     fprintf(stderr,"SaveTGAFile - Sorry, can only save RGB files\n");
 	  return false;
   }
-  FILE *f = NULL;
-  f = fopen(name,"wb");
-  if (f == NULL) { 
+  FL_FILE *f = NULL;
+  f = (FL_FILE*)fl_fopen(name,"wb");
+  if (f == NULL) {
     fprintf(stderr,"SaveTGAFile - Sorry, cannot open file '%s'\n",name);
 	  return false;
   }
@@ -604,22 +608,22 @@ bool SaveTGAFile(const char *name,t_image_nfo *img)
   h.height           = img->height;
   h.pixel_depth      = img->depth;
   h.image_descriptor = (1<<5);
-  fwrite(&h,sizeof(struct tga_header_t),1,f);
+  fl_fwrite(&h,sizeof(struct tga_header_t),1,f);
   const uchar *data = img->pixels;
   for ( int j = 0; j < img->height ; j ++ ) {
     for ( int i = 0; i < img->width  ; i ++ ) {
       if (img->depth == 24) {
         for ( int c = 0 ; c < 3 ; c ++ ) {
-          fwrite(data + ((i + j* img->width) * 3 + (2-c)) ,1,1,f); // BGR ...
+          fl_fwrite(data + ((i + j* img->width) * 3 + (2-c)) ,1,1,f); // BGR ...
         }
       } else if (img->depth == 32) {
         for ( int c = 0 ; c < 3 ; c ++ ) {
-          fwrite(data + ((i + j* img->width) * 4 + (2-c)) ,1,1,f); // BGR ...
+          fl_fwrite(data + ((i + j* img->width) * 4 + (2-c)) ,1,1,f); // BGR ...
         }
-        fwrite(data + ((i + j* img->width) * 4 + 3) ,1,1,f); // A
+        fl_fwrite(data + ((i + j* img->width) * 4 + 3) ,1,1,f); // A
       }
     }
   }
-  fclose(f);
+  fl_fclose(f);
   return true;
 }

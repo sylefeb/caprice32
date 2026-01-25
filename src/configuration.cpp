@@ -105,6 +105,7 @@ namespace config
     {
       return atoi(config_.at(section).at(key).c_str());
     }
+    printf("%s default to %d\n",key.c_str(),defaultValue);
     return defaultValue;
   }
 
@@ -118,6 +119,7 @@ namespace config
     {
       return std::string(config_.at(section).at(key));
     }
+    printf("%s default to %s\n",key.c_str(),defaultValue.c_str());
     return defaultValue;
   }
 

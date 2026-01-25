@@ -221,7 +221,7 @@ void asic_set_palette() {
     if (blue > 255) {
       blue = 255;
     }
-    GateArray.palette[colour] = red | (green<<8) | (blue<<16); // SDL_MapRGB(back_surface->format, red, green, blue);
+    GateArray.palette[colour] = colour; // red | (green<<8) | (blue<<16); // SDL_MapRGB(back_surface->format, red, green, blue);
     // TODO(cpitrat): Confirm whether we should update the mode 2 'anti-aliasing' colour (cf. src/cap32.cpp where GateArray.palette[33] is set).
   }
 }
@@ -375,7 +375,7 @@ bool asic_register_page_write(word addr, byte val) {
 
 void putpixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
 {
-   int bpp = 8; // surface->format->BytesPerPixel;
+   int bpp = 1; // surface->format->BytesPerPixel;
    /* Here p is the address to the pixel we want to set */
    Uint8 *p = static_cast<Uint8 *>(surface->pixels) + y * surface->pitch + x * bpp;
 

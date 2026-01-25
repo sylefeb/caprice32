@@ -90,7 +90,7 @@ extern SDL_Window* mainSDLWindow;
 
 SDL_AudioDeviceID audio_device_id = 0;
 SDL_Surface *back_surface = nullptr;
-// video_plugin* vid_plugin;
+video_plugin* vid_plugin;
 SDL_Joystick* joysticks[MAX_NB_JOYSTICKS];
 // std::list<DevTools> devtools;
 
@@ -155,7 +155,7 @@ void set_osd_message(const std::string& message, uint32_t for_milliseconds) {
 double colours_rgb[32][3] = {
    { 0.5, 0.5, 0.5 }, { 0.5, 0.5, 0.5 },{ 0.0, 1.0, 0.5 }, { 1.0, 1.0, 0.5 },
    { 0.0, 0.0, 0.5 }, { 1.0, 0.0, 0.5 },{ 0.0, 0.5, 0.5 }, { 1.0, 0.5, 0.5 },
-   { 1.0, 0.0, 0.5 }, { 1.0, 1.0, 0.5 },{ 1.0, 1.0, 0.0 }, { 1.0, 1.0, 1.0 },
+   { 1.0, 0.0, 0.5 }, { 1.0, 1.0, 0.5 },{ 1.0, 1.0, 0.0 }, { 1.0, 1.0, 1.0 }, // 11
    { 1.0, 0.0, 0.0 }, { 1.0, 0.0, 1.0 },{ 1.0, 0.5, 0.0 }, { 1.0, 0.5, 1.0 },
    { 0.0, 0.0, 0.5 }, { 0.0, 1.0, 0.5 },{ 0.0, 1.0, 0.0 }, { 0.0, 1.0, 1.0 },
    { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 1.0 },{ 0.0, 0.5, 0.0 }, { 0.0, 0.5, 1.0 },
@@ -502,14 +502,14 @@ void z80_OUT_handler (reg_pair port, byte val)
                byte colour = val & 0x1f; // isolate colour value
                LOG_DEBUG("Set ink value " << static_cast<int>(GateArray.pen) << " to " << static_cast<int>(colour));
                GateArray.ink_values[GateArray.pen] = colour;
-               GateArray.palette[GateArray.pen] = // SDL_MapRGB(back_surface->format,colours[colour].r, colours[colour].g, colours[colour].b);
-                  colours[colour].r | (colours[colour].g<<8) | (colours[colour].b<<16);
+               GateArray.palette[GateArray.pen] = colour; // SDL_MapRGB(back_surface->format,colours[colour].r, colours[colour].g, colours[colour].b);
+                  // colours[colour].r | (colours[colour].g<<8) | (colours[colour].b<<16);
                if (GateArray.pen < 2) {
                   byte r = (static_cast<dword>(colours[GateArray.ink_values[0]].r) + static_cast<dword>(colours[GateArray.ink_values[1]].r)) >> 1;
                   byte g = (static_cast<dword>(colours[GateArray.ink_values[0]].g) + static_cast<dword>(colours[GateArray.ink_values[1]].g)) >> 1;
                   byte b = (static_cast<dword>(colours[GateArray.ink_values[0]].b) + static_cast<dword>(colours[GateArray.ink_values[1]].b)) >> 1;
                   // GateArray.palette[33] = SDL_MapRGB(back_surface->format, r, g, b); // update the mode 2 'anti-aliasing' colour
-                  GateArray.palette[33] = r | (g<<8) | (b<<16);
+                  GateArray.palette[33] = GateArray.ink_values[0]; // r | (g<<8) | (b<<16);
                }
                // TODO: update pbRegisterPage
             }
@@ -955,7 +955,7 @@ void print (byte *pbAddr, const char *pchStr, bool bolColour)
 
       case 8:
          // bColour = bolColour ? SDL_MapRGB(back_surface->format,255,255,255) : SDL_MapRGB(back_surface->format,0,0,0);
-         bColour = bolColour ? 0xffffff : 0x000000;
+         bColour = bolColour ? 11 : 20;
          for (int n = 0; n < iLen; n++) {
             iIdx = static_cast<int>(pchStr[n]); // get the ASCII value
             if ((iIdx < FNT_MIN_CHAR) || (iIdx > FNT_MAX_CHAR)) { // limit it to the range of chars in the font
@@ -987,15 +987,18 @@ void print (byte *pbAddr, const char *pchStr, bool bolColour)
    }
 }
 
+const char *test = "bla blia blo\n";
+const std::string test2 = "foo bar\n";
+
 int emulator_patch_ROM ()
 {
    byte *pbPtr;
 
    if(CPC.model <= 2) { // Normal CPC range
       std::string romFilename = CPC.rom_path + "/" + chROMFile[CPC.model];
-  printf("emulator_patch_ROM [1]\n");
+  printf("emulator_patch_ROM [1] %s %s %s\n",romFilename.c_str(),test,test2.c_str());
       if ((pfileObject = (FL_FILE*)fl_fopen(romFilename.c_str(), "rb")) != nullptr) { // load CPC OS + Basic
-         if(fl_fread(pbROM, 2*16384, 1, pfileObject) != 1) {
+         if(fl_fread(pbROM, 2*16384, 1, pfileObject) != 32768) {
             fl_fclose(pfileObject);
             LOG_ERROR("Couldn't read ROM file '" << romFilename << "'");
             return ERR_NOT_A_CPC_ROM;
@@ -1165,9 +1168,9 @@ int emulator_init ()
          pchRomData = new byte [16384]; // allocate 16K
          memset(pchRomData, 0, 16384); // clear memory
          std::string romFilename = CPC.rom_path + "/" + rom_file;
-  printf("emulator_init [6]\n");
+  printf("emulator_init [6] rom %s\n",romFilename.c_str());
          if ((pfileObject = (FL_FILE*)fl_fopen(romFilename.c_str(), "rb")) != nullptr) { // attempt to open the ROM image
-            if(fl_fread(pchRomData, 128, 1, pfileObject) != 1) { // read 128 bytes of ROM data
+            if(fl_fread(pchRomData, 128, 1, pfileObject) != 128) { // read 128 bytes of ROM data
               fl_fclose(pfileObject);
               return ERR_NOT_A_CPC_ROM;
             }
@@ -1192,13 +1195,13 @@ int emulator_init ()
 
 
             if (checksum == ((pchRomData[0x43] << 8) + pchRomData[0x44])) { // if the checksum matches, we got us an AMSDOS header
-               if(fl_fread(pchRomData, 128, 1, pfileObject) != 1) { // skip it
+               if(fl_fread(pchRomData, 128, 1, pfileObject) != 128) { // skip it
                  fl_fclose(pfileObject);
                  return ERR_NOT_A_CPC_ROM;
                }
             }
             if (!(pchRomData[0] & 0xfc)) { // is it a valid CPC ROM image (0 = forground, 1 = background, 2 = extension)?
-               if(fl_fread(pchRomData+128, 16384-128, 1, pfileObject) != 1) { // read the rest of the ROM file
+               if(fl_fread(pchRomData+128, 16384-128, 1, pfileObject) != (16384-128)) { // read the rest of the ROM file
                  fl_fclose(pfileObject);
                  return ERR_NOT_A_CPC_ROM;
                }
@@ -1207,7 +1210,7 @@ int emulator_init ()
             // Graduate Software Accessory Roms use a non standard format. Only the first byte is validated, and as long as
             // it's a "G" and terminated with a "$" it'll try to use it.
             // See https://www.cpcwiki.eu/index.php/Graduate_Software#Structure_of_a_utility_ROM for more details.
-              if(fl_fread(pchRomData+128, 16384-128, 1, pfileObject) != 1) { // read the rest of the ROM file
+              if(fl_fread(pchRomData+128, 16384-128, 1, pfileObject) != 16384-128) { // read the rest of the ROM file
                 fl_fclose(pfileObject);
                 return ERR_NOT_A_CPC_ROM;
               }
@@ -1234,7 +1237,7 @@ int emulator_init ()
          std::string romFilename = CPC.rom_path + "/" + CPC.rom_mf2;
          bool MF2error = false;
          if ((pfileObject = (FL_FILE*)fl_fopen(romFilename.c_str(), "rb")) != nullptr) { // attempt to open the ROM image
-            if((fl_fread(pbMF2ROMbackup, 8192, 1, pfileObject) != 1) || (memcmp(pbMF2ROMbackup+0x0d32, "MULTIFACE 2", 11) != 0)) { // does it have the required signature?
+            if((fl_fread(pbMF2ROMbackup, 8192, 1, pfileObject) != 8192) || (memcmp(pbMF2ROMbackup+0x0d32, "MULTIFACE 2", 11) != 0)) { // does it have the required signature?
                fprintf(stderr, "ERROR: The file selected as the MF2 ROM is either corrupt or invalid.\n");
                MF2error = true;
             }
@@ -1469,11 +1472,10 @@ void cpc_resume()
    audio_resume();
 }
 
-void direct_setpal(SDL_Color* c);
-
 int video_set_palette ()
 {
    if (!CPC.scr_tube) {
+      printf("video_set_palette [1]\n");
       for (int n = 0; n < 32; n++) {
          dword red = static_cast<dword>(colours_rgb[n][0] * (CPC.scr_intensity / 10.0) * 255);
          if (red > 255) { // limit to the maximum
@@ -1492,6 +1494,7 @@ int video_set_palette ()
          colours[n].b = blue;
       }
    } else {
+      printf("video_set_palette [2]\n");
       for (int n = 0; n < 32; n++) {
          double *colours_green = video_get_green_palette(CPC.scr_green_mode);
 
@@ -1512,13 +1515,14 @@ int video_set_palette ()
          colours[n].b = blue;
       }
    }
+   printf("video_set_palette [3]\n");
 
-   direct_setpal(colours);
+   vid_plugin->set_palette(colours);
 
    for (int n = 0; n < 17; n++) { // loop for all colours + border
       int i=GateArray.ink_values[n];
       // GateArray.palette[n] = SDL_MapRGB(back_surface->format,colours[i].r,colours[i].g,colours[i].b);
-      GateArray.palette[n] =colours[i].r | (colours[i].g<<8)  | (colours[i].b<<16);
+      GateArray.palette[n] = i; // colours[i].r | (colours[i].g<<8)  | (colours[i].b<<16);
    }
 
    return 0;
@@ -1528,7 +1532,7 @@ int video_set_palette ()
 
 void video_set_style ()
 {
-   if (1/*vid_plugin->half_pixels*/)
+   if (vid_plugin->half_pixels)
    {
       dwXScale = 1;
       dwYScale = 1;
@@ -1616,16 +1620,14 @@ void mouse_init ()
   ShowCursor(CPC.phazer_emulation);
 }
 
-SDL_Surface* direct_init(video_plugin* t, int scale, bool fs);
-
 int video_init ()
 {
 printf("video_init [1]\n");
-   //vid_plugin=&video_plugin_list[CPC.scr_style];
-   //LOG_DEBUG("video_init: vid_plugin = " << vid_plugin->name)
+   vid_plugin=&video_plugin_list[/*CPC.scr_style*/0]; // override
+   LOG_DEBUG("video_init: vid_plugin = " << vid_plugin->name)
 
 printf("video_init [2]\n");
-   back_surface=direct_init(/*vid_plugin*/nullptr, CPC.scr_scale, CPC.scr_window==0);
+   back_surface=vid_plugin->init(vid_plugin, CPC.scr_scale, CPC.scr_window==0);
 
 printf("video_init [3]\n");
    if (!back_surface) { // attempt to set the required video mode
@@ -1634,7 +1636,7 @@ printf("video_init [3]\n");
    }
 
 printf("video_init [4]\n");
-   CPC.scr_bpp = 24; // back_surface->format->BitsPerPixel; // bit depth of the surface
+   CPC.scr_bpp = 8; // back_surface->format->BitsPerPixel; // bit depth of the surface
    video_set_style(); // select rendering style
 
 printf("video_init [5]\n");
@@ -1663,16 +1665,13 @@ printf("video_init [8]\n");
 
 void video_shutdown ()
 {
-   //vid_plugin->close();
+   vid_plugin->close();
 }
 
 
-void direct_flip(video_plugin*);
-
 void video_display ()
 {
-  direct_flip(nullptr);
-   // vid_plugin->flip(vid_plugin);
+   vid_plugin->flip(vid_plugin);
 }
 
 
@@ -1760,26 +1759,30 @@ void update_cpc_speed()
 
 std::string getConfigurationFilename(bool forWrite)
 {
+#if 0
   int mode = R_OK | ( F_OK * forWrite );
 
   const char* PATH_OK = "";
 
   std::vector<std::pair<const char*, std::string>> configPaths = {
     { PATH_OK, args.cfgFilePath}, // First look in any user supplied configuration file path
-    { chAppPath, "/cap32.cfg" }, // If not found, cap32.cfg in the same directory as the executable
-    { getenv("XDG_CONFIG_HOME"), "/cap32.cfg" },
-    { getenv("HOME"), "/.config/cap32.cfg" },
-    { getenv("HOME"), "/.cap32.cfg" },
-    { DESTDIR, "/etc/cap32.cfg" },
-    { "/", "/../Resources/cap32.cfg" }, // To find the configuration from the bundle on MacOS
+    //{ chAppPath, "/cap32.cfg" }, // If not found, cap32.cfg in the same directory as the executable
+    //{ getenv("XDG_CONFIG_HOME"), "/cap32.cfg" },
+    //{ getenv("HOME"), "/.config/cap32.cfg" },
+    //{ getenv("HOME"), "/.cap32.cfg" },
+    //{ DESTDIR, "/etc/cap32.cfg" },
+    //{ "/", "/../Resources/cap32.cfg" }, // To find the configuration from the bundle on MacOS
+    { "/", "cap32.cfg" },
   };
 
   for(const auto& p: configPaths){
     // Skip paths using getenv if it returned NULL (i.e environment variable not defined)
     if (!p.first) continue;
     std::string s = std::string(p.first) + p.second;
-    if (access(s.c_str(), mode) == 0) {
-      std::cout << "Using configuration file" << (forWrite ? " to save" : "") << ": " << s << std::endl;
+    FL_FILE *f=fl_fopen(s.c_str(), "rb");
+    if (f) {
+      fl_close(f);
+      printf("Using configuration file %s : %s\n",(forWrite ? " to save" : ""),s.c_str());
 #if 0
       // Dirty hack for MacOS Bundle to work: change dir to the bin dir
       // cap32.cfg is edited to have relative paths from the bin dir
@@ -1788,16 +1791,20 @@ std::string getConfigurationFilename(bool forWrite)
       }
 #endif
       return s;
+    } else {
+      printf("Configuration file %s not found.\n",s.c_str());
     }
   }
+#endif
 
-  std::cout << "No valid configuration file found, using empty config." << std::endl;
+  printf("No valid configuration file found, using empty config.\n");
   return "";
 }
 
 
 void loadConfiguration (t_CPC &CPC, const std::string& configFilename)
 {
+   printf("loadConfiguration\n");
    config::Config conf;
    conf.parseFile(configFilename);
    conf.setOverrides(args.cfgOverrides);
@@ -1808,7 +1815,7 @@ void loadConfiguration (t_CPC &CPC, const std::string& configFilename)
    if (CPC.model > 3) {
       CPC.model = 2;
    }
-   CPC.jumpers = conf.getIntValue("system", "jumpers", 0x1e) & 0x1e; // OEM is Amstrad, video refresh is 50Hz
+   CPC.jumpers = conf.getIntValue("system", "jumpers", 30) & 0x1e; // OEM is Amstrad, video refresh is 50Hz
    CPC.ram_size = conf.getIntValue("system", "ram_size", 128) & 0x02c0; // 128KB RAM
    if (CPC.ram_size > 576) {
       CPC.ram_size = 576;
@@ -1820,8 +1827,8 @@ void loadConfiguration (t_CPC &CPC, const std::string& configFilename)
       CPC.speed = DEF_SPEED_SETTING;
    }
    CPC.limit_speed = conf.getIntValue("system", "limit_speed", 1) & 1;
-   CPC.auto_pause = conf.getIntValue("system", "auto_pause", 1) & 1;
-   CPC.boot_time = conf.getIntValue("system", "boot_time", 5);
+   CPC.auto_pause = conf.getIntValue("system", "auto_pause", 0) & 1;
+   CPC.boot_time = conf.getIntValue("system", "boot_time", 42);
    CPC.printer = conf.getIntValue("system", "printer", 0) & 1;
    CPC.mf2 = conf.getIntValue("system", "mf2", 0) & 1;
    CPC.keyboard = conf.getIntValue("system", "keyboard", 0);
@@ -1837,10 +1844,10 @@ void loadConfiguration (t_CPC &CPC, const std::string& configFilename)
    CPC.devtools_scale = conf.getIntValue("devtools", "scale", 1);
    CPC.devtools_max_stack_size = conf.getIntValue("devtools", "max_stack_size", 50);
 
-   CPC.scr_scale = conf.getIntValue("video", "scr_scale", 2);
+   CPC.scr_scale = conf.getIntValue("video", "scr_scale", 1);
    CPC.scr_preserve_aspect_ratio = conf.getIntValue("video", "scr_preserve_aspect_ratio", 1);
    CPC.scr_style = conf.getIntValue("video", "scr_style", 1);
-#if 0
+#if 1
    if (CPC.scr_style >= video_plugin_list.size()) {
       CPC.scr_style = DEFAULT_VIDEO_PLUGIN;
       LOG_ERROR("Unsupported video plugin specified - defaulting to plugin " << video_plugin_list[DEFAULT_VIDEO_PLUGIN].name);
@@ -1852,7 +1859,7 @@ void loadConfiguration (t_CPC &CPC, const std::string& configFilename)
       CPC.scr_oglscanlines = 30;
    }
    CPC.scr_led = conf.getIntValue("video", "scr_led", 1) & 1;
-   CPC.scr_fps = conf.getIntValue("video", "scr_fps", 0) & 1;
+   CPC.scr_fps = conf.getIntValue("video", "scr_fps", 1) & 1;
    CPC.scr_tube = conf.getIntValue("video", "scr_tube", 0) & 1;
    CPC.scr_intensity = conf.getIntValue("video", "scr_intensity", 10);
    CPC.scr_remanency = conf.getIntValue("video", "scr_remanency", 0) & 1;
@@ -1861,8 +1868,8 @@ void loadConfiguration (t_CPC &CPC, const std::string& configFilename)
    }
    CPC.scr_window = conf.getIntValue("video", "scr_window", 1) & 1;
 
-   CPC.scr_green_mode = conf.getIntValue("video", "scr_green_mode", 0) & 1;
-   CPC.scr_green_blue_percent = conf.getIntValue("video", "scr_green_blue_percent", 0);
+   CPC.scr_green_mode = conf.getIntValue("video", "scr_green_mode", 1) & 1;
+   CPC.scr_green_blue_percent = conf.getIntValue("video", "scr_green_blue_percent", 30);
 
    CPC.snd_enabled = conf.getIntValue("sound", "enabled", 1) & 1;
    CPC.snd_playback_rate = conf.getIntValue("sound", "playback_rate", 2);
@@ -1902,13 +1909,18 @@ void loadConfiguration (t_CPC &CPC, const std::string& configFilename)
    CPC.printer_file = conf.getStringValue("file", "printer_file", appPath + "/printer.dat");
    CPC.sdump_dir = conf.getStringValue("file", "sdump_dir", appPath + "/screenshots");
 
-   CPC.rom_path = conf.getStringValue("rom", "rom_path", appPath + "/rom/");
+   CPC.rom_path = conf.getStringValue("rom", "rom_path", "");
    for (int iRomNum = 0; iRomNum < 16; iRomNum++) { // loop for ROMs 0-15
       char chRomId[14];
       sprintf(chRomId, "slot%02d", iRomNum); // build ROM ID
-      CPC.rom_file[iRomNum] = conf.getStringValue("rom", chRomId, "");
+      if (iRomNum == 7) {
+        CPC.rom_file[iRomNum] = conf.getStringValue("rom", chRomId, "DEFAULT");
+      } else {
+        CPC.rom_file[iRomNum] = conf.getStringValue("rom", chRomId, "");
+      }
    }
-   CPC.rom_mf2 = conf.getStringValue("rom", "rom_mf2", "");
+
+   CPC.rom_mf2 = conf.getStringValue("rom", "rom_mf2", "/MF2.rom");
 
    CPC.cartridge.file = CPC.rom_path + "/system.cpr"; // Only default path defined. Needed for CPC6128+
 }
@@ -2785,7 +2797,7 @@ printf("[2]\n");
    #endif
 
 printf("[3]\n");
-#if 0
+#if 1
    loadConfiguration(CPC, getConfigurationFilename()); // retrieve the emulator configuration
    if (CPC.printer) {
       if (!printer_start()) { // start capturing printer output, if enabled
@@ -3233,6 +3245,7 @@ printf("[13]\n");
          }
 #endif
          dword dwOffset = CPC.scr_pos - CPC.scr_base; // offset in current surface row
+         // printf("dwOffset:%d\n",dwOffset);
          if (VDU.scrln > 0) {
             CPC.scr_base = static_cast<byte *>(back_surface->pixels) + (VDU.scrln * CPC.scr_line_offs); // determine current position
          } else {
