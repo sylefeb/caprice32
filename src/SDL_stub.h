@@ -43,7 +43,7 @@ typedef struct SDL_Surface
     // int refcount;               /**< Read-mostly */
 } SDL_Surface;
 
-typedef enum SDL_Keycode  { Keycode_Empty = 0 } SDL_Keycode;
+typedef Uint32 SDL_Keycode;
 typedef enum SDL_Keymod   { Keymod_Empty = 0 } SDL_Keymod;
 typedef enum SDL_Scancode { Scancode_Empty = 0 } SDL_Scancode;
 

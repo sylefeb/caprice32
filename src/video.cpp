@@ -231,8 +231,6 @@ void direct_flip(video_plugin*)
     ++cnt;
     SaveTGAFile(str,&tga);
     std::cerr << " done.\n";
-  } else {
-    std::cerr << '.';
   }
 #else
   gpu_frame_start();

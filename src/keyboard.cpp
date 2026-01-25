@@ -8,6 +8,8 @@
 #include "fileutils.h"
 #include "log.h"
 
+#include "../libs/kb.h"
+
 #include "SDL_stub.h"
 
 extern byte bit_values[8];
@@ -968,6 +970,227 @@ std::map<CapriceKey, PCKey> InputMapper::SDLkeysymFromCPCkeys_us = {
 };
 #endif
 
+std::map<CapriceKey, PCKey> InputMapper::SDLkeysymFromCPCkeys = {
+  { CPC_0,           '0' },
+  { CPC_1,           '1' },
+  { CPC_2,           '2' },
+  { CPC_3,           '3' },
+  { CPC_4,           '4' },
+  { CPC_5,           '5' },
+  { CPC_6,           '6' },
+  { CPC_7,           '7' },
+  { CPC_8,           '8' },
+  { CPC_9,           '9' },
+  /*
+  { CPC_A,           'a' | MOD_PC_SHIFT },
+  { CPC_B,           'b' | MOD_PC_SHIFT },
+  { CPC_C,           'c' | MOD_PC_SHIFT },
+  { CPC_D,           'd' | MOD_PC_SHIFT },
+  { CPC_E,           'e' | MOD_PC_SHIFT },
+  { CPC_F,           'f' | MOD_PC_SHIFT },
+  { CPC_G,           'g' | MOD_PC_SHIFT },
+  { CPC_H,           'h' | MOD_PC_SHIFT },
+  { CPC_I,           'i' | MOD_PC_SHIFT },
+  { CPC_J,           'j' | MOD_PC_SHIFT },
+  { CPC_K,           'k' | MOD_PC_SHIFT },
+  { CPC_L,           'l' | MOD_PC_SHIFT },
+  { CPC_M,           'm' | MOD_PC_SHIFT },
+  { CPC_N,           'n' | MOD_PC_SHIFT },
+  { CPC_O,           'o' | MOD_PC_SHIFT },
+  { CPC_P,           'p' | MOD_PC_SHIFT },
+  { CPC_Q,           'q' | MOD_PC_SHIFT },
+  { CPC_R,           'r' | MOD_PC_SHIFT },
+  { CPC_S,           's' | MOD_PC_SHIFT },
+  { CPC_T,           't' | MOD_PC_SHIFT },
+  { CPC_U,           'u' | MOD_PC_SHIFT },
+  { CPC_V,           'v' | MOD_PC_SHIFT },
+  { CPC_W,           'w' | MOD_PC_SHIFT },
+  { CPC_X,           'x' | MOD_PC_SHIFT },
+  { CPC_Y,           'y' | MOD_PC_SHIFT },
+  { CPC_Z,           'z' | MOD_PC_SHIFT },
+   */
+  { CPC_a,           'a' },
+  { CPC_b,           'b' },
+  { CPC_c,           'c' },
+  { CPC_d,           'd' },
+  { CPC_e,           'e' },
+  { CPC_f,           'f' },
+  { CPC_g,           'g' },
+  { CPC_h,           'h' },
+  { CPC_i,           'i' },
+  { CPC_j,           'j' },
+  { CPC_k,           'k' },
+  { CPC_l,           'l' },
+  { CPC_m,           'm' },
+  { CPC_n,           'n' },
+  { CPC_o,           'o' },
+  { CPC_p,           'p' },
+  { CPC_q,           'q' },
+  { CPC_r,           'r' },
+  { CPC_s,           's' },
+  { CPC_t,           't' },
+  { CPC_u,           'u' },
+  { CPC_v,           'v' },
+  { CPC_w,           'w' },
+  { CPC_x,           'x' },
+  { CPC_y,           'y' },
+  { CPC_z,           'z' },
+  /*
+  { CPC_CTRL_a,      'a' | MOD_PC_CTRL },
+  { CPC_CTRL_b,      'b' | MOD_PC_CTRL },
+  { CPC_CTRL_c,      'c' | MOD_PC_CTRL },
+  { CPC_CTRL_d,      'd' | MOD_PC_CTRL },
+  { CPC_CTRL_e,      'e' | MOD_PC_CTRL },
+  { CPC_CTRL_f,      'f' | MOD_PC_CTRL },
+  { CPC_CTRL_g,      'g' | MOD_PC_CTRL },
+  { CPC_CTRL_h,      'h' | MOD_PC_CTRL },
+  { CPC_CTRL_i,      'i' | MOD_PC_CTRL },
+  { CPC_CTRL_j,      'j' | MOD_PC_CTRL },
+  { CPC_CTRL_k,      'k' | MOD_PC_CTRL },
+  { CPC_CTRL_l,      'l' | MOD_PC_CTRL },
+  { CPC_CTRL_m,      'm' | MOD_PC_CTRL },
+  { CPC_CTRL_n,      'n' | MOD_PC_CTRL },
+  { CPC_CTRL_o,      'o' | MOD_PC_CTRL },
+  { CPC_CTRL_p,      'p' | MOD_PC_CTRL },
+  { CPC_CTRL_q,      'q' | MOD_PC_CTRL },
+  { CPC_CTRL_r,      'r' | MOD_PC_CTRL },
+  { CPC_CTRL_s,      's' | MOD_PC_CTRL },
+  { CPC_CTRL_t,      't' | MOD_PC_CTRL },
+  { CPC_CTRL_u,      'u' | MOD_PC_CTRL },
+  { CPC_CTRL_v,      'v' | MOD_PC_CTRL },
+  { CPC_CTRL_w,      'w' | MOD_PC_CTRL },
+  { CPC_CTRL_x,      'x' | MOD_PC_CTRL },
+  { CPC_CTRL_y,      'y' | MOD_PC_CTRL },
+  { CPC_CTRL_z,      'z' | MOD_PC_CTRL },
+  { CPC_CTRL_0,      '0' | MOD_PC_CTRL },
+  { CPC_CTRL_1,      '1' | MOD_PC_CTRL },
+  { CPC_CTRL_2,      '2' | MOD_PC_CTRL },
+  { CPC_CTRL_3,      '3' | MOD_PC_CTRL },
+  { CPC_CTRL_4,      '4' | MOD_PC_CTRL },
+  { CPC_CTRL_5,      '5' | MOD_PC_CTRL },
+  { CPC_CTRL_6,      '6' | MOD_PC_CTRL },
+  { CPC_CTRL_7,      '7' | MOD_PC_CTRL },
+  { CPC_CTRL_8,      '8' | MOD_PC_CTRL },
+  { CPC_CTRL_9,      '9' | MOD_PC_CTRL },
+  { CPC_CTRL_UP,     KB_UP | MOD_PC_CTRL },
+  { CPC_CTRL_DOWN,   KB_DOWN | MOD_PC_CTRL },
+  { CPC_CTRL_LEFT,   KB_LEFT | MOD_PC_CTRL },
+  { CPC_CTRL_RIGHT,  KB_RIGHT | MOD_PC_CTRL },
+  { CPC_AMPERSAND,   '7' | MOD_PC_SHIFT },
+  { CPC_ASTERISK,    '8' | MOD_PC_SHIFT },
+  { CPC_AT,          '2' | MOD_PC_SHIFT },
+   */
+  //{ CPC_BACKQUOTE,   SDLK_BACKQUOTE },
+  //{ CPC_BACKSLASH,   SDLK_BACKSLASH },
+  //{ CPC_CAPSLOCK,    SDLK_CAPSLOCK },
+  //{ CPC_CLR,         SDLK_DELETE },
+  //{ CPC_COLON,       ';' | MOD_PC_SHIFT },
+  { CPC_COMMA,       ',' },
+  //{ CPC_CONTROL,     SDLK_LCTRL },
+  //{ CPC_COPY,        SDLK_LALT },
+  //{ CPC_CPY_DOWN,    SDLK_DOWN | MOD_PC_SHIFT },
+  //{ CPC_CPY_LEFT,    SDLK_LEFT | MOD_PC_SHIFT },
+  //{ CPC_CPY_RIGHT,   SDLK_RIGHT | MOD_PC_SHIFT },
+  //{ CPC_CPY_UP,      SDLK_UP | MOD_PC_SHIFT },
+  { CPC_CUR_DOWN,    KB_DOWN },
+  { CPC_CUR_LEFT,    KB_LEFT },
+  { CPC_CUR_RIGHT,   KB_RIGHT },
+  { CPC_CUR_UP,      KB_UP },
+  //{ CPC_CUR_HOMELN,  SDLK_HOME },
+  //{ CPC_CUR_ENDLN,   SDLK_END },
+  //{ CPC_CUR_HOMEBL,  SDLK_HOME | MOD_PC_CTRL },
+  //{ CPC_CUR_ENDBL,   SDLK_END | MOD_PC_CTRL },
+  //{ CPC_DBLQUOTE,    SDLK_QUOTE | MOD_PC_SHIFT },
+  { CPC_DEL,         KB_BACKSPACE },
+  //{ CPC_DOLLAR,      '4' | MOD_PC_SHIFT },
+  { CPC_ENTER,       '\n' },
+  { CPC_EQUAL,       '=' },
+  { CPC_ESC,         KB_ESC },
+  //{ CPC_EXCLAMATN,   '1' | MOD_PC_SHIFT },
+  //{ CPC_F0,          SDLK_KP_0 },
+  { CPC_F1,          KB_F1 },
+  { CPC_F2,          KB_F2 },
+  { CPC_F3,          KB_F3 },
+  { CPC_F4,          KB_F4 },
+  { CPC_F5,          KB_F5 },
+  { CPC_F6,          KB_F6 },
+  { CPC_F7,          KB_F7 },
+  { CPC_F8,          KB_F8 },
+  { CPC_F9,          KB_F9 },
+  /*
+  //{ CPC_CTRL_F0,     SDLK_KP_0 | MOD_PC_CTRL },
+  { CPC_CTRL_F1,     KB_F1 | MOD_PC_CTRL },
+  { CPC_CTRL_F2,     KB_F2 | MOD_PC_CTRL },
+  { CPC_CTRL_F3,     KB_F3 | MOD_PC_CTRL },
+  { CPC_CTRL_F4,     KB_F4 | MOD_PC_CTRL },
+  { CPC_CTRL_F5,     KB_F5 | MOD_PC_CTRL },
+  { CPC_CTRL_F6,     KB_F6 | MOD_PC_CTRL },
+  { CPC_CTRL_F7,     KB_F7 | MOD_PC_CTRL },
+  { CPC_CTRL_F8,     KB_F8 | MOD_PC_CTRL },
+  { CPC_CTRL_F9,     KB_F9 | MOD_PC_CTRL },
+  // { CPC_SHIFT_F0,    SDLK_KP_0 | MOD_PC_SHIFT },
+  { CPC_SHIFT_F1,    KB_F1 | MOD_PC_SHIFT },
+  { CPC_SHIFT_F2,    KB_F2 | MOD_PC_SHIFT },
+  { CPC_SHIFT_F3,    KB_F3 | MOD_PC_SHIFT },
+  { CPC_SHIFT_F4,    KB_F4 | MOD_PC_SHIFT },
+  { CPC_SHIFT_F5,    KB_F5 | MOD_PC_SHIFT },
+  { CPC_SHIFT_F6,    KB_F6 | MOD_PC_SHIFT },
+  { CPC_SHIFT_F7,    KB_F7 | MOD_PC_SHIFT },
+  { CPC_SHIFT_F8,    KB_F8 | MOD_PC_SHIFT },
+  { CPC_SHIFT_F9,    KB_F9 | MOD_PC_SHIFT },
+   */
+  { CPC_FPERIOD,     '.' },
+  //{ CPC_GREATER,     '.' | MOD_PC_SHIFT },
+  //{ CPC_HASH,        '3' | MOD_PC_SHIFT },
+  { CPC_LBRACKET,    '[' },
+  //{ CPC_LCBRACE,     '{' | MOD_PC_SHIFT },
+  //{ CPC_LEFTPAREN,   '9' | MOD_PC_SHIFT },
+  //{ CPC_LESS,        ',' | MOD_PC_SHIFT },
+  { CPC_LSHIFT,      KB_LSHIFT },
+  { CPC_MINUS,       '-' },
+  //{ CPC_PERCENT,     '5' | MOD_PC_SHIFT },
+  { CPC_PERIOD,      '.' },
+  //{ CPC_PIPE,        '\\' | MOD_PC_SHIFT },
+  //{ CPC_PLUS,        '=' | MOD_PC_SHIFT },
+  { CPC_POUND,       0 },
+  //{ CPC_POWER,       '6' | MOD_PC_SHIFT },
+  //{ CPC_QUESTION,    '/' | MOD_PC_SHIFT },
+  { CPC_QUOTE,       '\'' },
+  { CPC_RBRACKET,    ']' },
+  //{ CPC_RCBRACE,     '}' | MOD_PC_SHIFT },
+  { CPC_RETURN,      '\n' },
+  //{ CPC_RIGHTPAREN,  '0' | MOD_PC_SHIFT },
+  { CPC_RSHIFT,      KB_RSHIFT },
+  { CPC_SEMICOLON,   ';' },
+  { CPC_SLASH,       '/' },
+  { CPC_SPACE,       ' ' },
+  { CPC_TAB,         KB_TAB },
+  //{ CPC_UNDERSCORE,  '-' | MOD_PC_SHIFT },
+  /*
+  { CAP32_GUI,       SDLK_F1},
+  { CAP32_VKBD,      SDLK_F1 | MOD_PC_SHIFT },
+  { CAP32_FULLSCRN,  SDLK_F2 },
+  { CAP32_DEVTOOLS,  SDLK_F2 | MOD_PC_SHIFT },
+  { CAP32_SCRNSHOT,  SDLK_F3 },
+  { CAP32_SNAPSHOT,  SDLK_F3 | MOD_PC_SHIFT },
+  { CAP32_LD_SNAP,   SDLK_F4 | MOD_PC_SHIFT },
+  { CAP32_RESET,     SDLK_F5 },
+  { CAP32_NEXTDISKA, SDLK_F5 | MOD_PC_SHIFT },
+  { CAP32_MF2STOP,   SDLK_F6 },
+  { CAP32_JOY,       SDLK_F7 },
+  { CAP32_PHAZER,    SDLK_F7 | MOD_PC_SHIFT },
+  { CAP32_FPS,       SDLK_F8 },
+  { CAP32_SPEED,     SDLK_F9 },
+  { CAP32_EXIT,      SDLK_F10 },
+  { CAP32_PASTE,     SDLK_F11 },
+  { CAP32_DEBUG,     SDLK_F12 },
+  { CAP32_TAPEPLAY,  SDLK_F4 },
+  { CAP32_DELAY,     SDLK_PAUSE },
+  { CAP32_WAITBREAK, SDLK_PAUSE | MOD_PC_SHIFT }
+   */
+};
+
+
 const std::map<const std::string, const CapriceKey> InputMapper::CPCkeysFromStrings = {
    {"CPC_0",           CPC_0},
    {"CPC_1",           CPC_1},
@@ -1465,23 +1688,24 @@ bool InputMapper::load_layout(const std::string& filename)
 
 void InputMapper::init()
 {
+  printf("InputMapper::init\n");
   // Ensure we're starting from a fresh state
-//  SDLkeysymFromCPCkeys.clear();
-//  CPCkeysFromSDLkeysym.clear();
-//  SDLkeysFromChars.clear();
+  // SDLkeysymFromCPCkeys.clear(); // given
+  CPCkeysFromSDLkeysym.clear();
+  SDLkeysFromChars.clear();
 
-  std::string layout_file = CPC->resources_path + "/" + CPC->kbd_layout;
-  load_layout(layout_file);
+  //std::string layout_file = CPC->resources_path + "/" + CPC->kbd_layout;
+  //load_layout(layout_file);
 
-//  for (const auto &mapping : SDLkeysymFromCPCkeys) {
-//    CPCkeysFromSDLkeysym[mapping.second] = mapping.first;
-//  }
+  for (const auto &mapping : SDLkeysymFromCPCkeys) {
+    CPCkeysFromSDLkeysym[mapping.second] = mapping.first;
+  }
 
   for (const auto &mapping : CPCkeysFromChars) {
-//    if (SDLkeysymFromCPCkeys.count(mapping.second) != 0) {
-//      PCKey sdl_moddedkey = SDLkeysymFromCPCkeys[mapping.second];
-//      SDLkeysFromChars[mapping.first] = std::make_pair(static_cast<SDL_Keycode>(sdl_moddedkey & BITMASK_NOMOD), static_cast<SDL_Keymod>(sdl_moddedkey >> BITSHIFT_MOD));
-//    }
+    if (SDLkeysymFromCPCkeys.count(mapping.second) != 0) {
+      PCKey sdl_moddedkey = SDLkeysymFromCPCkeys[mapping.second];
+      SDLkeysFromChars[mapping.first] = std::make_pair(static_cast<SDL_Keycode>(sdl_moddedkey & BITMASK_NOMOD), static_cast<SDL_Keymod>(sdl_moddedkey >> BITSHIFT_MOD));
+    }
   }
 }
 
@@ -1722,8 +1946,10 @@ void InputMapper::CPCscancodeFromJoystickAxis(SDL_JoyAxisEvent jaxis, CPCScancod
 InputMapper::InputMapper(t_CPC *CPC): CPC(CPC) { }
 
 void applyKeypress(CPCScancode cpc_key, byte keyboard_matrix[], bool pressed) {
+    printf("applyKeypress, CPC.paused:%d, key:%x\n",CPC.paused,static_cast<byte>(cpc_key));
     if ((!CPC.paused) && (static_cast<byte>(cpc_key) != 0xff)) {
         if (pressed) {
+          printf("applyKeypress, pressed\n");
             keyboard_matrix[static_cast<byte>(cpc_key) >> 4] &= ~bit_values[static_cast<byte>(cpc_key) & 7]; // key is being held down
             if (cpc_key & MOD_CPC_SHIFT) { // CPC SHIFT key required?
                 keyboard_matrix[0x25 >> 4] &= ~bit_values[0x25 & 7]; // key needs to be SHIFTed
@@ -1736,9 +1962,12 @@ void applyKeypress(CPCScancode cpc_key, byte keyboard_matrix[], bool pressed) {
                 keyboard_matrix[0x27 >> 4] |= bit_values[0x27 & 7]; // make sure CONTROL key is released
             }
         } else {
+          printf("applyKeypress, unpressed\n");
             keyboard_matrix[static_cast<byte>(cpc_key) >> 4] |= bit_values[static_cast<byte>(cpc_key) & 7]; // key has been released
             keyboard_matrix[0x25 >> 4] |= bit_values[0x25 & 7]; // make sure key is unSHIFTed
             keyboard_matrix[0x27 >> 4] |= bit_values[0x27 & 7]; // make sure CONTROL key is not held down
         }
+    } else {
+      printf("applyKeypress, ignored\n");
     }
 }

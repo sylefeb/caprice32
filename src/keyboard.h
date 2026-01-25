@@ -298,7 +298,7 @@ class InputMapper {
     std::map<char, std::pair<SDL_Keycode, SDL_Keymod>> SDLkeysFromChars;
     static std::map<CapriceKey, PCKey> SDLkeysymFromCPCkeys_us;
     std::map<PCKey, CapriceKey> CPCkeysFromSDLkeysym;
-    std::map<CapriceKey, PCKey> SDLkeysymFromCPCkeys;
+    static std::map<CapriceKey, PCKey> SDLkeysymFromCPCkeys;
     t_CPC *CPC;
 
     LineParsingResult process_cfg_line(char *line);

@@ -26,6 +26,7 @@
 //#include <filesystem>
 extern "C" {
 #include "../libs/fat_io_lib/src/fat_filelib.h"
+#include "../libs/kb.h"
 }
 
 // #include "SDL.h"
@@ -3212,6 +3213,34 @@ printf("[13]\n");
             case SDL_QUIT:
                cleanExit(0);
          }
+      }
+#else
+      static int shift_down = 0;
+      unsigned int k = kb_peek();
+      if (k != KB_NONE) {
+        switch (k)
+        {
+        case KB_RSHIFT: case KB_LSHIFT:
+          shift_down = 1;
+          break;
+        case (KB_RSHIFT | KB_UNPRESSED): case (KB_LSHIFT | KB_UNPRESSED):
+          shift_down = 0;
+          break;
+        default: {
+          if (shift_down) {
+            k = kb_shift(k);
+          }
+          SDL_Keysym ks;
+          ks.sym = (SDL_Keycode)k;
+          CPCScancode scancode = CPC.InputMapper->CPCscancodeFromKeysym(ks);
+          if (k & KB_UNPRESSED) {
+            printf("key unpressed %d(%c)\n",k,k);
+          } else {
+            printf("key pressed   %d(%c)\n",k,k);
+          }
+          applyKeypress(scancode, keyboard_matrix, !(k & KB_UNPRESSED));
+        } break;
+        }
       }
 #endif
 
