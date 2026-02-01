@@ -37,6 +37,10 @@
 
 #include "z80_macros.h"
 
+extern "C" {
+#include "../libs/gpu.h"
+}
+
 extern t_CPC CPC;
 extern t_FDC FDC;
 extern t_GateArray GateArray;
@@ -46,6 +50,8 @@ extern dword dwMF2Flags;
 extern dword dwMF2ExitAddr;
 
 extern int iTapeCycleCount;
+
+unsigned int z80_retired = 0;
 
 #ifdef DEBUG_Z80
 extern FILE *pfoDebug;
@@ -337,6 +343,7 @@ inline byte read_mem_no_watchpoint(word addr) {
 }
 
 inline byte read_mem(word addr) {
+#if 0
   if (!watchpoints.empty()) {
     if (std::any_of(watchpoints.begin(), watchpoints.end(), [&](const auto& w) {
           return w.address == addr && (w.type & READ);
@@ -344,6 +351,7 @@ inline byte read_mem(word addr) {
       z80.watchpoint_reached = 1;
     }
   }
+#endif
   return read_mem_no_watchpoint(addr);
 }
 
@@ -352,6 +360,7 @@ inline void write_mem_no_watchpoint(word addr, byte val) {
 }
 
 inline void write_mem(word addr, byte val) {
+#if 0
   if (!watchpoints.empty()) {
     if (std::any_of(watchpoints.begin(), watchpoints.end(), [&](const auto& w) {
           return w.address == addr && (w.type & WRITE);
@@ -363,6 +372,7 @@ inline void write_mem(word addr, byte val) {
     //LOG_DEBUG("Pass write to ASIC: " << static_cast<int>(val) << " at " << addr);
     if(!asic_register_page_write(addr, val)) return;
   }
+#endif
   //if (addr >= 0xc000 && addr <= 0xffff) {
   //  printf("[screen] write %d at %x\n",static_cast<int>(val),addr);
   //}
@@ -1098,9 +1108,11 @@ int z80_execute()
 
       // TODO: Measure impact. If important, create templated version of
       // z80_execute, read_mem, write_mem ...
+#if 0
       if (!breakpoints.empty()) {
         if ((z80.breakpoint_reached = std::any_of(breakpoints.begin(), breakpoints.end(), [&](const auto& b) { return b.address == _PC; }))) break;
       }
+#endif
       if (z80.watchpoint_reached) break;
       if (z80.step_in) { z80.step_in++; break; }
 
@@ -1112,10 +1124,31 @@ int z80_execute()
    return EC_BREAKPOINT;
 }
 
+unsigned int ztm_last = 0;
+
+inline void ztm_start()
+{
+  ztm_last = cpu_time();
+}
+
+inline unsigned int ztm_next(const char *str)
+{
+#if 1
+  unsigned int ztm_now = cpu_time();
+  unsigned int delta = ztm_now - ztm_last;
+  printf(str,delta);
+  ztm_last = cpu_time();
+  return delta;
+#else
+  return 0;
+#endif
+}
 
 
 void z80_execute_instruction()
 {
+  ztm_next("z80_execute_instruction %u (before)\n");
+      ++ z80_retired;
       byte bOpCode = read_mem(_PC++);
       iCycleCount = cc_op[bOpCode];
       _R++;
@@ -1378,11 +1411,12 @@ void z80_execute_instruction()
          case xor_l:       XOR(_L); break;
          case xor_mhl:     XOR(read_mem(_HL)); break;
       }
+  ztm_next("z80_execute_instruction %u (after)\n");
 }
 
 
 
-void z80_execute_pfx_cb_instruction()
+inline void z80_execute_pfx_cb_instruction()
 {
    byte bOpCode;
 

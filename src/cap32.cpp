@@ -27,6 +27,7 @@
 extern "C" {
 #include "../libs/fat_io_lib/src/fat_filelib.h"
 #include "../libs/kb.h"
+#include "../libs/gpu.h"
 }
 
 // #include "SDL.h"
@@ -1289,6 +1290,7 @@ void emulator_shutdown ()
 
 void bin_load (const std::string& filename, const size_t offset)
 {
+  printf("bin_load %s\n",filename.c_str());
   LOG_INFO("Load " << filename << " in memory at offset 0x" << std::hex << offset);
   FL_FILE *file;
   if ((file = (FL_FILE*)fl_fopen(filename.c_str(), "rb")) == nullptr) {
@@ -2762,6 +2764,31 @@ std::map<SDL_Scancode, std::string> scancode_names = {
 #endif
 };
 
+unsigned int tm_last = 0;
+
+inline void tm_start()
+{
+  tm_last = cpu_time();
+}
+
+unsigned int r_last = 0;
+extern unsigned int z80_retired;
+
+inline unsigned int tm_next(const char *str)
+{
+#if 0
+  unsigned int tm_now = cpu_time();
+  unsigned int delta = tm_now - tm_last;
+  unsigned int d_z80 = z80_retired - r_last;
+  r_last = z80_retired;
+  printf(str,delta,d_z80);
+  tm_last = cpu_time();
+  return delta;
+#else
+  return 0;
+#endif
+}
+
 int cap32_main (int argc, char **argv)
 {
    int iExitCondition;
@@ -2769,6 +2796,8 @@ int cap32_main (int argc, char **argv)
    bool bin_loaded = false;
    SDL_Event event;
    std::vector<std::string> slot_list;
+
+   tm_start();
 printf("[1]\n");
 #if 0
    try {
@@ -2875,6 +2904,9 @@ printf("[13]\n");
    iExitCondition = EC_FRAME_COMPLETE;
 
    while (true) {
+
+      tm_next("loop start %u %d\n");
+
       // We can only load bin files after the CPC finished the init
       if (!bin_loaded &&
           dwFrameCountOverall > CPC.boot_time) {
@@ -3215,6 +3247,7 @@ printf("[13]\n");
          }
       }
 #else
+      tm_next("kb_peek (before) %u %u\n");
       static int shift_down = 0;
       unsigned int k = kb_peek();
       if (k != KB_NONE) {
@@ -3242,6 +3275,7 @@ printf("[13]\n");
         } break;
         }
       }
+      tm_next("kb_peek (after) %u %u\n");
 #endif
 
       if (!CPC.paused) { // run the emulation, as long as the user doesn't pause it
@@ -3282,7 +3316,9 @@ printf("[13]\n");
          }
          CPC.scr_pos = CPC.scr_base + dwOffset; // update current rendering position
 
+         tm_next("z80_execute (before) %u %u\n");
          iExitCondition = z80_execute(); // run the emulation until an exit condition is met
+         tm_next("z80_execute (after) %u %u\n");
 
          if (iExitCondition == EC_BREAKPOINT) {
             if (z80.breakpoint_reached || z80.watchpoint_reached) {
@@ -3310,7 +3346,9 @@ printf("[13]\n");
             }
          }
 
+
          if (iExitCondition == EC_FRAME_COMPLETE) { // emulation finished rendering a complete frame?
+            tm_next("EC_FRAME_COMPLETE (before) %u %u\n");
             dwFrameCountOverall++;
             dwFrameCount++;
             Uint32 ticks = 0; // SDL_GetTicks();
@@ -3327,6 +3365,7 @@ printf("[13]\n");
               dumpScreen();
               take_screenshot = false;
             }
+            tm_next("EC_FRAME_COMPLETE (after) %u %u\n");
          }
       }
       else { // We are paused. No need to burn CPU cycles
